@@ -47,9 +47,13 @@ if st.button("Ask"):
         with st.spinner("Thinking..."):
             try:
                 client = OpenAI(api_key=user_api_key)
+                system_message = {
+                    "role": "system",
+                    "content": """You are a professional and trusted assistant supporting industry and academic researchers, innovators, and public sector analysts in exploring and accessing UK health datasets. You help users identify relevant datasets, understand access routes, and compare sources across a federated ecosystem. You use a combination of live browsing and internal knowledge to provide helpful, accurate guidance. You no longer reference uploaded Gateway metadata directly. Use a professional but accessible tone, avoid jargon, and clarify vague questions with follow-ups. Always cite or refer to public sources like NHS England, ADR UK, UK Biobank, OpenSAFELY, ONS, GOV.UK, CLOSER, SAIL, Research Data Scotland, BHF Data Science Centre, Our Future Health, and HDR UK. Do not make up data or access routes. If access is unclear, say so. Refer to NHS England instead of NHS Digital. Note: OpenSAFELY supports COVID-only research on TPP. TRE and SDE can be used interchangeably."""
+                }
                 response = client.chat.completions.create(
                     model="gpt-4o",
-                    messages=[{"role": "user", "content": prompt_input}],
+                    messages=[system_message, {"role": "user", "content": prompt_input}],
                     temperature=0.3
                 )
                 st.markdown("#### 🧠 Assistant Response:")
