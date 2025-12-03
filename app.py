@@ -64,7 +64,11 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
+    # Try to load API key from Streamlit secrets (for deployed apps)
+    try:
+        st.session_state.api_key = st.secrets.get("OPENAI_API_KEY", "")
+    except:
+        st.session_state.api_key = ""
 
 # --- HEADER SECTION ---
 st.markdown("""
