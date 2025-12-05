@@ -6,6 +6,9 @@ import re
 import hashlib
 from datetime import datetime
 from collections import Counter
+import requests
+import json
+import pandas as pd
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="UK Health Data Assistant", page_icon=":microscope:", layout="centered")
@@ -118,6 +121,134 @@ def get_cache_key(prompt, model, temperature):
     key_string = f"{prompt}_{model}_{temperature}"
     return hashlib.md5(key_string.encode()).hexdigest()
 
+# --- HDR UK GATEWAY API INTEGRATION ---
+HDR_API_BASE = "https://api.www.healthdatagateway.org/api/v1"
+HDR_WEB_BASE = "https://www.healthdatagateway.org"
+
+@st.cache_data(ttl=3600)
+def search_hdr_datasets(query, limit=5):
+    """Search HDR UK Gateway for datasets"""
+    try:
+        # Try the public search endpoint
+        response = requests.get(
+            f"{HDR_WEB_BASE}/search",
+            params={"search": query, "tab": "Datasets"},
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            return {"status": "success", "message": f"Found results for '{query}'", "url": response.url}
+        else:
+            return {"status": "unavailable", "message": "HDR UK Gateway search temporarily unavailable"}
+    except Exception as e:
+        return {"status": "error", "message": f"Could not connect to HDR UK Gateway: {str(e)}"}
+
+def get_dataset_info(dataset_name):
+    """Get information about a specific dataset from HDR UK"""
+    # Map common dataset names to their HDR UK pages
+    dataset_pages = {
+        "CPRD": f"{HDR_WEB_BASE}/search?search=CPRD",
+        "UK Biobank": f"{HDR_WEB_BASE}/search?search=UK%20Biobank",
+        "OpenSAFELY": f"{HDR_WEB_BASE}/search?search=OpenSAFELY",
+        "SAIL": f"{HDR_WEB_BASE}/search?search=SAIL",
+    }
+
+    return dataset_pages.get(dataset_name, f"{HDR_WEB_BASE}/search?search={dataset_name}")
+
+# --- COMPARISON TABLE GENERATION ---
+DATASET_COMPARISONS = {
+    "CPRD vs OpenSAFELY": pd.DataFrame({
+        "Feature": ["Data Type", "Coverage", "Access Method", "Primary Care", "Linkages", "Cost", "Best For"],
+        "CPRD": [
+            "EHR extracts",
+            "~60M patients",
+            "Direct application",
+            "EMIS + Vision",
+            "HES, ONS, cancer",
+            "Fees apply",
+            "Observational studies"
+        ],
+        "OpenSAFELY": [
+            "In-situ analysis",
+            "~60M patients",
+            "Code repository",
+            "TPP only",
+            "HES, ONS, SGSS",
+            "Free (COVID research)",
+            "COVID-19 research"
+        ]
+    }),
+
+    "UK Biobank vs Genomics England": pd.DataFrame({
+        "Feature": ["Data Type", "Participants", "Genomics", "Imaging", "Follow-up", "Access", "Best For"],
+        "UK Biobank": [
+            "Cohort study",
+            "~500,000",
+            "WGS + arrays",
+            "MRI, DXA, ECG",
+            "Ongoing",
+            "Application required",
+            "Population genomics"
+        ],
+        "Genomics England": [
+            "Clinical genomics",
+            "~100,000",
+            "WGS",
+            "Limited",
+            "Via NHS",
+            "Application required",
+            "Rare diseases, cancer"
+        ]
+    }),
+
+    "SAIL vs Research Data Scotland": pd.DataFrame({
+        "Feature": ["Coverage", "Population", "Data Types", "Linkages", "Access Method", "Best For"],
+        "SAIL": [
+            "Wales",
+            "~3.5M",
+            "GP, hospital, social care",
+            "Education, housing",
+            "TRE (Data Safe Haven)",
+            "Welsh population studies"
+        ],
+        "Research Data Scotland": [
+            "Scotland",
+            "~5.5M",
+            "Health, social care, admin",
+            "Education, justice",
+            "TRE (Safe Haven)",
+            "Scottish population studies"
+        ]
+    })
+}
+
+def get_comparison_table(query):
+    """Get a pre-built comparison table if query matches"""
+    query_lower = query.lower()
+
+    for key, df in DATASET_COMPARISONS.items():
+        if all(term in query_lower for term in key.lower().split(" vs ")):
+            return key, df
+
+    return None, None
+
+def create_custom_comparison(datasets):
+    """Create a custom comparison table based on dataset names"""
+    # This is a simplified version - could be enhanced with API data
+    comparison_data = {
+        "Feature": ["Data Type", "Geographic Coverage", "Access Method", "Typical Use Case"],
+    }
+
+    for dataset in datasets:
+        comparison_data[dataset] = [
+            "Health records",
+            "UK",
+            "Application required",
+            f"{dataset} research"
+        ]
+
+    return pd.DataFrame(comparison_data)
+
 # --- INITIALIZE SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -222,21 +353,48 @@ with st.sidebar:
             for topic, count in most_common:
                 st.caption(f"• {topic}: {count}")
 
+    # HDR UK GATEWAY SEARCH
+    st.divider()
+    st.header("🔬 HDR UK Gateway")
+
+    search_query = st.text_input("Search datasets", placeholder="e.g., diabetes, genomics")
+    if st.button("Search Gateway", use_container_width=True):
+        if search_query:
+            with st.spinner("Searching HDR UK Gateway..."):
+                result = search_hdr_datasets(search_query)
+                if result["status"] == "success":
+                    st.success(result["message"])
+                    st.link_button("View Results", result["url"], use_container_width=True)
+                else:
+                    st.warning(result["message"])
+
+    # QUICK DATASET LINKS
+    st.caption("Quick Links:")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("CPRD", key="cprd_link", use_container_width=True):
+            st.link_button("Open", get_dataset_info("CPRD"), use_container_width=True)
+    with col_b:
+        if st.button("UK Biobank", key="ukb_link", use_container_width=True):
+            st.link_button("Open", get_dataset_info("UK Biobank"), use_container_width=True)
+
     # ABOUT
     st.divider()
     st.markdown("""
     ### About
     This assistant helps researchers discover and access UK health datasets.
 
-    **Version:** 3.0
+    **Version:** 3.1
     **Powered by:** OpenAI GPT-4o
 
-    **New Features:**
+    **Features:**
     - 📥 Export conversations
     - 🔗 Dataset links
     - 👍 Response feedback
     - 🔍 Conversation search
     - ⚡ Smart caching
+    - 📊 Comparison tables
+    - 🔬 HDR UK Gateway integration
     """)
 
 # --- CATEGORIZED PROMPT STARTERS ---
@@ -298,12 +456,19 @@ for idx, message in enumerate(st.session_state.messages):
         continue
 
     with st.chat_message(message["role"]):
-        # Linkify dataset mentions in assistant responses
-        content = message["content"]
-        if message["role"] == "assistant":
-            content = linkify_datasets(content)
-
-        st.markdown(content)
+        # Check for comparison queries in user messages
+        if message["role"] == "user":
+            comparison_title, comparison_df = get_comparison_table(message["content"])
+            if comparison_df is not None:
+                st.markdown(message["content"])
+                st.markdown(f"**📊 Comparison Table: {comparison_title}**")
+                st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+            else:
+                st.markdown(message["content"])
+        else:
+            # Linkify dataset mentions in assistant responses
+            content = linkify_datasets(message["content"])
+            st.markdown(content)
 
         # Add feedback buttons for assistant responses
         if message["role"] == "assistant":
@@ -339,6 +504,13 @@ if prompt := st.chat_input("Ask your health data question..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
+
+            # Check if this is a comparison query and show table
+            comparison_title, comparison_df = get_comparison_table(prompt)
+            if comparison_df is not None:
+                st.markdown(f"**📊 Comparison Table: {comparison_title}**")
+                st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+                st.info("💡 The assistant will provide additional context below.")
 
         # Generate assistant response with streaming
         with st.chat_message("assistant"):
