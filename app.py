@@ -219,6 +219,100 @@ DATASET_COMPARISONS = {
             "TRE (Safe Haven)",
             "Scottish population studies"
         ]
+    }),
+
+    "NHS England vs Research Data Scotland": pd.DataFrame({
+        "Feature": ["Coverage", "Population", "Primary Data", "Linkages", "Access", "Cost", "Best For"],
+        "NHS England": [
+            "England",
+            "~57M",
+            "Hospital, GP, prescribing",
+            "HES, MHSDS, cancer",
+            "Data Access Request Service",
+            "Fees apply",
+            "England-wide studies"
+        ],
+        "Research Data Scotland": [
+            "Scotland",
+            "~5.5M",
+            "Health, social care",
+            "Education, justice",
+            "Safe Haven",
+            "Varies",
+            "Scottish linkage studies"
+        ]
+    }),
+
+    "CLOSER vs UK Biobank": pd.DataFrame({
+        "Feature": ["Data Type", "Focus", "Participants", "Studies", "Longitudinal", "Access", "Best For"],
+        "CLOSER": [
+            "Longitudinal studies",
+            "Life course research",
+            "Multiple cohorts",
+            "9 major cohorts",
+            "Yes (decades)",
+            "Study-specific",
+            "Life course epidemiology"
+        ],
+        "UK Biobank": [
+            "Cohort + biobank",
+            "Middle-aged health",
+            "~500,000",
+            "Single cohort",
+            "Yes (ongoing)",
+            "Application process",
+            "Genomics, imaging"
+        ]
+    }),
+
+    "CPRD vs UK Biobank": pd.DataFrame({
+        "Feature": ["Data Type", "Coverage", "Genomics", "Imaging", "Linkages", "Cost", "Best For"],
+        "CPRD": [
+            "Primary care EHR",
+            "~60M patients",
+            "Limited",
+            "No",
+            "HES, ONS, cancer",
+            "Fees apply",
+            "Real-world evidence"
+        ],
+        "UK Biobank": [
+            "Cohort + biobank",
+            "~500,000",
+            "WGS + arrays",
+            "MRI, DXA, ECG",
+            "HES, cancer, death",
+            "Fees apply",
+            "Genomic medicine"
+        ]
+    }),
+
+    "OpenSAFELY vs SAIL": pd.DataFrame({
+        "Feature": ["Analysis Model", "Coverage", "Primary Care", "Data Access", "Code Sharing", "Best For"],
+        "OpenSAFELY": [
+            "In-situ (code to data)",
+            "England (~60M)",
+            "TPP only",
+            "No direct access",
+            "GitHub (public)",
+            "Transparent research"
+        ],
+        "SAIL": [
+            "TRE (researcher access)",
+            "Wales (~3.5M)",
+            "EMIS + Vision",
+            "Within Safe Haven",
+            "On request",
+            "Welsh linkage studies"
+        ]
+    }),
+
+    "TRE Comparison": pd.DataFrame({
+        "Feature": ["SAIL Databank", "Research Data Scotland", "NHS England SDE", "OpenSAFELY"],
+        "Region": ["Wales", "Scotland", "England", "England"],
+        "Access Model": ["Remote/on-site", "Safe Haven", "Secure environment", "Code to data"],
+        "Data Holdings": ["Health, social, admin", "Health, social, justice", "NHS data", "Primary care (TPP)"],
+        "Best For": ["Welsh studies", "Scottish linkage", "England NHS", "COVID/transparent"]
     })
 }
 
@@ -249,6 +343,98 @@ def create_custom_comparison(datasets):
 
     return pd.DataFrame(comparison_data)
 
+# --- DATASET METADATA ---
+DATASET_METADATA = {
+    "CPRD": {
+        "name": "Clinical Practice Research Datalink",
+        "coverage": "~60 million patients",
+        "data_type": "Primary care electronic health records",
+        "update_frequency": "Regular updates",
+        "access": "Application required, fees apply",
+        "url": "https://cprd.com/"
+    },
+    "UK Biobank": {
+        "name": "UK Biobank",
+        "coverage": "~500,000 participants",
+        "data_type": "Cohort study with genomics, imaging, and health records",
+        "update_frequency": "Ongoing follow-up",
+        "access": "Application required, fees apply",
+        "url": "https://www.ukbiobank.ac.uk/"
+    },
+    "OpenSAFELY": {
+        "name": "OpenSAFELY",
+        "coverage": "~60 million patients (TPP)",
+        "data_type": "In-situ primary care analysis platform",
+        "update_frequency": "Near real-time",
+        "access": "Code repository (GitHub), free for COVID research",
+        "url": "https://www.opensafely.org/"
+    },
+    "SAIL": {
+        "name": "SAIL Databank",
+        "coverage": "~3.5 million (Wales population)",
+        "data_type": "Linked health, social care, and administrative data",
+        "update_frequency": "Regular updates",
+        "access": "TRE access via Data Safe Haven",
+        "url": "https://saildatabank.com/"
+    },
+    "Genomics England": {
+        "name": "Genomics England",
+        "coverage": "~100,000 genomes",
+        "data_type": "Whole genome sequences with clinical data",
+        "update_frequency": "Ongoing",
+        "access": "Application required",
+        "url": "https://www.genomicsengland.co.uk/"
+    }
+}
+
+def display_dataset_metadata(dataset_name):
+    """Display metadata card for a dataset"""
+    if dataset_name in DATASET_METADATA:
+        meta = DATASET_METADATA[dataset_name]
+        return f"""
+**{meta['name']}**
+- 📊 Coverage: {meta['coverage']}
+- 📁 Data Type: {meta['data_type']}
+- 🔄 Updates: {meta['update_frequency']}
+- 🔐 Access: {meta['access']}
+- 🔗 [Learn more]({meta['url']})
+"""
+    return None
+
+# --- AI FOLLOW-UP SUGGESTIONS ---
+def generate_follow_up_questions(conversation_context, last_response):
+    """Generate AI-powered follow-up questions based on conversation"""
+    try:
+        # Extract key topics from the last response
+        prompt = f"""Based on this conversation about UK health data, suggest 3 brief, specific follow-up questions a researcher might ask.
+
+Last response: {last_response[:500]}
+
+Provide 3 questions that:
+1. Dig deeper into mentioned datasets
+2. Explore related data sources
+3. Ask about practical access/usage
+
+Format: Just the 3 questions, one per line, no numbers or bullets."""
+
+        client = OpenAI(api_key=st.session_state.api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Use cheaper model for suggestions
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=150
+        )
+
+        suggestions = response.choices[0].message.content.strip().split('\n')
+        return [s.strip() for s in suggestions if s.strip()][:3]
+    except:
+        # Fallback suggestions if API fails
+        return [
+            "What are the access requirements?",
+            "How can I link this with other datasets?",
+            "What's the typical research timeline?"
+        ]
+
 # --- INITIALIZE SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -275,6 +461,12 @@ if "usage_stats" not in st.session_state:
 
 if "search_filter" not in st.session_state:
     st.session_state.search_filter = ""
+
+if "follow_up_suggestions" not in st.session_state:
+    st.session_state.follow_up_suggestions = []
+
+if "show_metadata" not in st.session_state:
+    st.session_state.show_metadata = {}
 
 # --- HEADER SECTION ---
 st.markdown("""
@@ -384,7 +576,7 @@ with st.sidebar:
     ### About
     This assistant helps researchers discover and access UK health datasets.
 
-    **Version:** 3.1
+    **Version:** 3.2
     **Powered by:** OpenAI GPT-4o
 
     **Features:**
@@ -393,8 +585,10 @@ with st.sidebar:
     - 👍 Response feedback
     - 🔍 Conversation search
     - ⚡ Smart caching
-    - 📊 Comparison tables
+    - 📊 Comparison tables (9 total!)
     - 🔬 HDR UK Gateway integration
+    - 💡 AI follow-up suggestions
+    - 📊 Dataset metadata cards
     """)
 
 # --- CATEGORIZED PROMPT STARTERS ---
@@ -470,7 +664,7 @@ for idx, message in enumerate(st.session_state.messages):
             content = linkify_datasets(message["content"])
             st.markdown(content)
 
-        # Add feedback buttons for assistant responses
+        # Add feedback buttons and features for assistant responses
         if message["role"] == "assistant":
             col1, col2, col3 = st.columns([1, 1, 8])
             with col1:
@@ -481,6 +675,26 @@ for idx, message in enumerate(st.session_state.messages):
                 if st.button("👎", key=f"down_{idx}"):
                     st.session_state.feedback[idx] = "negative"
                     st.toast("Thanks for your feedback!")
+
+            # Check for dataset mentions and show metadata cards
+            for dataset in DATASET_METADATA.keys():
+                if dataset in message["content"]:
+                    with st.expander(f"📊 {dataset} Details"):
+                        metadata = display_dataset_metadata(dataset)
+                        if metadata:
+                            st.markdown(metadata)
+
+            # Show follow-up suggestions for the last assistant message
+            if idx == len(st.session_state.messages) - 1 and len(st.session_state.messages) > 1:
+                if st.session_state.follow_up_suggestions:
+                    st.markdown("**💡 You might also want to ask:**")
+                    cols = st.columns(3)
+                    for i, suggestion in enumerate(st.session_state.follow_up_suggestions):
+                        if i < 3:
+                            with cols[i]:
+                                if st.button(suggestion, key=f"followup_{idx}_{i}", use_container_width=True):
+                                    st.session_state.messages.append({"role": "user", "content": suggestion})
+                                    st.rerun()
 
 # --- USER INPUT ---
 if prompt := st.chat_input("Ask your health data question..."):
@@ -569,6 +783,14 @@ if prompt := st.chat_input("Ask your health data question..."):
 
             # Add assistant response to chat history
             st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+            # Generate follow-up suggestions
+            if st.session_state.api_key and full_response and not full_response.startswith("❌"):
+                st.session_state.follow_up_suggestions = generate_follow_up_questions(
+                    st.session_state.messages,
+                    full_response
+                )
+                st.rerun()
 
 # --- FOOTER SECTION ---
 st.divider()
