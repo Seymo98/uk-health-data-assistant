@@ -19,8 +19,10 @@ This section provides structured information for AI agents, LLMs, and automated 
 | Dataset Discovery | Find UK health datasets by topic, condition, or data type | Natural language query |
 | Access Route Guidance | Understand TRE/SDE requirements and application processes | Conversational |
 | Dataset Comparison | Compare data sources (CPRD vs OpenSAFELY, etc.) | Built-in comparison tables |
-| HDR UK Gateway Search | Live search of the Health Data Gateway | `search_hdr_datasets()` |
+| HDR UK Gateway Search | Live search of the Health Data Gateway | `hdruk_gateway.GatewayClient` |
 | Data Use Register Extraction | Extract SAIL Databank usage records | `extract_sail_data_use_register.py` |
+| Interactive Dataset Explorer | Visual dataset search with facets and export | Streamlit page |
+| CLI Dataset Search | Command-line dataset discovery | `python -m hdruk_gateway.cli` |
 | Conversation Export | Export chat history as Markdown | Built-in UI |
 
 ### Supported Data Sources
@@ -112,18 +114,52 @@ AI agents can use these patterns to interact with the assistant:
 
 ### API Integration
 
-#### HDR UK Gateway Search
+#### HDR UK Gateway Client (Full API)
 
 ```python
-from app import search_hdr_datasets, get_dataset_info
+from hdruk_gateway import GatewayClient, DatasetSearcher
+
+# Initialize client
+client = GatewayClient()
 
 # Search for datasets
-result = search_hdr_datasets("diabetes", limit=10)
-# Returns: {"status": "success", "message": "...", "url": "..."}
+datasets = client.search_datasets("diabetes")
+for ds in datasets:
+    print(f"{ds.title} - {ds.publisher_name}")
+    print(f"  URL: {ds.gateway_url}")
 
-# Get dataset page URL
-url = get_dataset_info("CPRD")
-# Returns: "https://www.healthdatagateway.org/search?search=CPRD"
+# Get a specific dataset
+dataset = client.get_dataset("dataset-id")
+
+# Search data use register
+data_uses = client.search_data_uses("cancer research")
+
+# Advanced search with natural language parsing
+searcher = DatasetSearcher()
+result = searcher.search("cardiovascular data in Wales")
+print(f"Found {result.total_count} results")
+
+# Export results
+csv_data = searcher.export_results_csv(result.results)
+```
+
+#### CLI Tool
+
+```bash
+# Search datasets
+python -m hdruk_gateway.cli search "diabetes"
+
+# Search with export
+python -m hdruk_gateway.cli search "cancer in Wales" --export csv
+
+# Interactive mode
+python -m hdruk_gateway.cli interactive
+
+# Get dataset details
+python -m hdruk_gateway.cli dataset <dataset-id>
+
+# Export data use register
+python -m hdruk_gateway.cli export-dur --publisher SAIL
 ```
 
 #### SAIL Data Use Register Extraction
@@ -201,18 +237,33 @@ Open `http://localhost:8501` and enter your OpenAI API key in the sidebar.
 
 ```
 uk-health-data-assistant/
-├── app.py                              # Main Streamlit application
-│   ├── search_hdr_datasets()           # HDR UK Gateway search
-│   ├── get_comparison_table()          # Dataset comparison tables
-│   ├── linkify_datasets()              # Auto-link dataset mentions
-│   └── export_conversation_md()        # Export chat as Markdown
+├── app.py                              # Main Streamlit chat application
 │
-├── extract_sail_data_use_register.py   # SAIL data use register extraction
-│   ├── HDRGatewayAPI                   # HDR UK Gateway API client
-│   └── SAILDirectScraper               # Direct SAIL website scraper
+├── hdruk_gateway/                      # HDR UK Gateway API Client Library
+│   ├── __init__.py                     # Package exports
+│   ├── client.py                       # GatewayClient - full API integration
+│   │   ├── search_datasets()           # Search datasets
+│   │   ├── search_data_uses()          # Search data use register
+│   │   ├── search_publications()       # Search publications
+│   │   ├── get_dataset()               # Get single dataset
+│   │   └── list_publishers()           # List data custodians
+│   ├── models.py                       # Data models (Dataset, DataUseRegister, etc.)
+│   ├── search.py                       # DatasetSearcher - advanced search
+│   │   ├── parse_query()               # Natural language parsing
+│   │   ├── search()                    # Enhanced search with facets
+│   │   └── export_results_*()          # CSV/JSON export
+│   ├── exceptions.py                   # Custom exceptions
+│   └── cli.py                          # Command-line interface
 │
+├── pages/                              # Multi-page Streamlit app
+│   └── 1_🔬_Dataset_Explorer.py        # Interactive dataset explorer
+│
+├── extract_sail_data_use_register.py   # SAIL data extraction tools
 ├── system_prompt_v3_structured.txt     # AI assistant knowledge base
 ├── requirements.txt                    # Python dependencies
+│
+├── ai-context.json                     # Machine-readable project metadata
+├── llms.txt                            # AI agent discovery file
 │
 ├── .streamlit/
 │   ├── config.toml                     # Streamlit UI configuration
@@ -408,6 +459,7 @@ Areas for contribution:
 
 | Version | Changes |
 |---------|---------|
+| 4.0 | Full HDR UK Gateway API client, Dataset Explorer UI, CLI tool |
 | 3.1 | HDR UK Gateway integration, comparison tables |
 | 3.0 | Advanced features: caching, feedback, search |
 | 2.0 | Streamlit UI, conversation history |
