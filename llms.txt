@@ -1,0 +1,63 @@
+# UK Health Data Assistant
+
+> Conversational AI for UK health data discovery
+
+This project helps researchers find and access UK health datasets through natural language conversation.
+
+## Capabilities
+
+- Dataset discovery by condition, topic, or data type
+- Access route guidance for TREs/SDEs
+- Dataset comparison (CPRD vs OpenSAFELY, etc.)
+- HDR UK Gateway live search
+- SAIL Databank register extraction
+
+## Primary Use Cases
+
+1. "What datasets exist for cardiovascular disease?"
+2. "Compare CPRD and OpenSAFELY access requirements"
+3. "How do I access data through a Trusted Research Environment?"
+4. "What data is available for maternal health in Scotland?"
+
+## Key Files
+
+- app.py: Main Streamlit application with chat interface
+- system_prompt_v3_structured.txt: AI assistant knowledge base
+- extract_sail_data_use_register.py: SAIL data extraction tools
+
+## Integrations
+
+- OpenAI GPT-4o for conversational AI
+- HDR UK Gateway API for dataset search
+- SAIL Databank for Wales research data
+
+## Data Sources Covered
+
+- HDR UK Innovation Gateway (UK-wide discovery portal)
+- CPRD (60M patients, primary care)
+- OpenSAFELY (60M patients, COVID research)
+- UK Biobank (500K participants, genomics)
+- SAIL Databank (Wales, 3.5M population)
+- Research Data Scotland (Scotland, 5.5M population)
+- Genomics England (rare diseases, cancer)
+- NHS England (national data custodian)
+
+## Quick Start
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## API Usage
+
+```python
+from app import search_hdr_datasets
+result = search_hdr_datasets("diabetes")
+```
+
+## Links
+
+- Repository: https://github.com/Seymo98/uk-health-data-assistant
+- HDR UK Gateway: https://www.healthdatagateway.org/
+- SAIL Databank: https://saildatabank.com/

@@ -1,125 +1,199 @@
 # UK Health Data Assistant
 
-A conversational AI assistant that helps researchers discover and access UK health datasets. Built with Streamlit and powered by OpenAI's GPT-4o.
+> **Smarter discovery, for faster impact.**
+
+A conversational AI assistant that helps researchers discover and access UK health datasets. Built with Streamlit and powered by OpenAI GPT-4o, with integrated HDR UK Gateway connectivity.
 
 ![UK Health Data Assistant](https://raw.githubusercontent.com/Seymo98/uk-health-data-assistant/main/650510F6-EB0C-4BFC-91DD-EBF8A8978931.png)
 
-**Tagline:** *Smarter discovery, for faster impact.*
-
 ---
 
-## Features
+## AI Agent Integration
 
-- 🤖 **Conversational AI** - Natural language queries about UK health datasets
-- 💬 **Chat History** - Contextual conversations with full message history
-- ⚡ **Streaming Responses** - Real-time response generation
-- 🎨 **Modern UI** - Clean, intuitive chat interface
-- ⚙️ **Customizable** - Choose models (GPT-4o, GPT-4o-mini, GPT-4-turbo) and adjust temperature
-- 🔐 **Secure** - API keys stored in session (never logged)
-- 📚 **Expert Knowledge** - Specialized in UK health data landscape (HDR UK, NHS England, CPRD, OpenSAFELY, etc.)
+This section provides structured information for AI agents, LLMs, and automated tooling.
+
+### Capabilities
+
+| Capability | Description | API/Tool |
+|------------|-------------|----------|
+| Dataset Discovery | Find UK health datasets by topic, condition, or data type | Natural language query |
+| Access Route Guidance | Understand TRE/SDE requirements and application processes | Conversational |
+| Dataset Comparison | Compare data sources (CPRD vs OpenSAFELY, etc.) | Built-in comparison tables |
+| HDR UK Gateway Search | Live search of the Health Data Gateway | `search_hdr_datasets()` |
+| Data Use Register Extraction | Extract SAIL Databank usage records | `extract_sail_data_use_register.py` |
+| Conversation Export | Export chat history as Markdown | Built-in UI |
+
+### Supported Data Sources
+
+```yaml
+data_sources:
+  national:
+    - name: HDR UK Innovation Gateway
+      url: https://www.healthdatagateway.org/
+      type: discovery_portal
+      coverage: UK-wide
+
+    - name: NHS England
+      url: https://www.england.nhs.uk/
+      type: data_custodian
+      coverage: England
+
+    - name: CPRD
+      url: https://cprd.com/
+      type: primary_care
+      coverage: ~60M patients (EMIS + Vision)
+      access: fee-based
+
+    - name: OpenSAFELY
+      url: https://www.opensafely.org/
+      type: in_situ_analysis
+      coverage: ~60M patients (TPP only)
+      access: code-repository
+      primary_use: COVID-19 research
+
+    - name: UK Biobank
+      url: https://www.ukbiobank.ac.uk/
+      type: cohort_study
+      coverage: ~500,000 participants
+      includes: [genomics, imaging, biomarkers]
+
+  devolved_nations:
+    - name: SAIL Databank
+      url: https://saildatabank.com/
+      region: Wales
+      coverage: ~3.5M population
+      type: trusted_research_environment
+
+    - name: Research Data Scotland
+      url: https://www.researchdata.scot/
+      region: Scotland
+      coverage: ~5.5M population
+      type: safe_haven
+
+  specialized:
+    - name: Genomics England
+      url: https://www.genomicsengland.co.uk/
+      focus: [rare_diseases, cancer_genomics]
+
+    - name: Our Future Health
+      url: https://ourfuturehealth.org.uk/
+      focus: disease_prevention
+
+    - name: BHF Data Science Centre
+      url: https://www.bhf.org.uk/what-we-do/our-research/bhf-data-science-centre
+      focus: cardiovascular_research
+```
+
+### Natural Language Query Examples
+
+AI agents can use these patterns to interact with the assistant:
+
+```text
+# Dataset Discovery
+"What datasets exist for [condition]?"
+"Where can I find data on [topic] in [region]?"
+"What primary care data is available for [use case]?"
+
+# Access Requirements
+"How do I access data through [platform]?"
+"What are the requirements for [TRE/SDE]?"
+"Compare access routes for [dataset A] vs [dataset B]"
+
+# Dataset Comparison
+"Compare [CPRD] and [OpenSAFELY]"
+"What's the difference between [SAIL] and [Research Data Scotland]?"
+"Which dataset is best for [use case]?"
+
+# Technical Queries
+"Does [platform] support [data type]?"
+"What linkages are available in [dataset]?"
+"What geographic coverage does [source] provide?"
+```
+
+### API Integration
+
+#### HDR UK Gateway Search
+
+```python
+from app import search_hdr_datasets, get_dataset_info
+
+# Search for datasets
+result = search_hdr_datasets("diabetes", limit=10)
+# Returns: {"status": "success", "message": "...", "url": "..."}
+
+# Get dataset page URL
+url = get_dataset_info("CPRD")
+# Returns: "https://www.healthdatagateway.org/search?search=CPRD"
+```
+
+#### SAIL Data Use Register Extraction
+
+```python
+from extract_sail_data_use_register import HDRGatewayAPI, SAILDirectScraper
+
+# Via HDR UK Gateway API
+api = HDRGatewayAPI()
+sail_records = api.get_sail_data_uses()
+
+# Via direct scraping
+scraper = SAILDirectScraper()
+df = scraper.scrape(include_details=True)
+```
+
+### Programmatic Access Patterns
+
+```python
+# For AI agents building on this assistant
+import streamlit as st
+from openai import OpenAI
+
+# Load the specialized system prompt
+with open("system_prompt_v3_structured.txt", "r") as f:
+    system_prompt = f.read()
+
+# Create a UK health data specialist agent
+client = OpenAI(api_key="...")
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": "What datasets are available for cardiovascular research?"}
+    ]
+)
+```
 
 ---
 
 ## Quick Start
 
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Seymo98/uk-health-data-assistant.git
-   cd uk-health-data-assistant
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the app**
-   ```bash
-   streamlit run app.py
-   ```
-
-4. **Open in browser**
-   - Navigate to `http://localhost:8501`
-   - Enter your OpenAI API key in the sidebar
-   - Start asking questions!
-
----
-
-## Deploy to Streamlit Cloud
-
-Deploy your own instance for free:
-
-### Step 1: Fork or Use This Repo
-- Fork this repository to your GitHub account, or
-- Use this repo directly (if you have access)
-
-### Step 2: Sign Up for Streamlit Cloud
-1. Go to [share.streamlit.io](https://share.streamlit.io)
-2. Sign in with your GitHub account
-
-### Step 3: Deploy New App
-1. Click **"New app"**
-2. Select:
-   - **Repository:** `Seymo98/uk-health-data-assistant` (or your fork)
-   - **Branch:** `claude/getting-started-01FGJKi1aQCosmDuryZ1uCrN` (or `main`)
-   - **Main file path:** `app.py`
-3. Click **"Advanced settings"** (optional)
-
-### Step 4: Configure Secrets (Optional)
-If you want to provide a default API key for users:
-
-1. In "Advanced settings", add to **Secrets**:
-   ```toml
-   OPENAI_API_KEY = "sk-your-openai-api-key-here"
-   ```
-2. **Note:** Users can still override this by entering their own key in the UI
-
-### Step 5: Deploy!
-- Click **"Deploy!"**
-- Wait 2-3 minutes for deployment
-- Your app will be live at `https://your-app-name.streamlit.app`
-
----
-
-## Usage
-
-### Example Questions
-
-Try asking:
-- "What datasets exist for cardiovascular disease?"
-- "Compare OpenSAFELY and CPRD access requirements."
-- "What data is available for maternal health in Scotland?"
-- "How do I access data through a Trusted Research Environment?"
-
-### Features
-
-**Sidebar Controls:**
-- **API Key:** Enter your OpenAI API key (required)
-- **Clear Chat:** Reset the conversation
-- **Model Selection:** Choose between GPT-4o, GPT-4o-mini, or GPT-4-turbo
-- **Temperature:** Adjust response creativity (0.0 = focused, 1.0 = creative)
-
----
-
-## Configuration
-
-### System Prompt
-The assistant's behavior is defined in `system_prompt_v3_structured.txt`. Edit this file to customize the assistant's knowledge and tone.
-
-### Streamlit Settings
-Customize appearance and behavior in `.streamlit/config.toml`.
-
----
-
-## Requirements
+### Prerequisites
 
 - Python 3.8+
-- streamlit >= 1.0.0
-- openai >= 1.0.0
+- OpenAI API key ([get one here](https://platform.openai.com/account/api-keys))
 
-See `requirements.txt` for full dependencies.
+### Installation
+
+```bash
+git clone https://github.com/Seymo98/uk-health-data-assistant.git
+cd uk-health-data-assistant
+pip install -r requirements.txt
+```
+
+### Run Locally
+
+```bash
+streamlit run app.py
+```
+
+Open `http://localhost:8501` and enter your OpenAI API key in the sidebar.
+
+### Deploy to Streamlit Cloud
+
+1. Fork this repository
+2. Sign in at [share.streamlit.io](https://share.streamlit.io)
+3. Click **New app** → Select your fork → Set main file to `app.py`
+4. (Optional) Add `OPENAI_API_KEY` in Secrets for a default key
+5. Deploy
 
 ---
 
@@ -128,65 +202,306 @@ See `requirements.txt` for full dependencies.
 ```
 uk-health-data-assistant/
 ├── app.py                              # Main Streamlit application
-├── system_prompt_v3_structured.txt     # AI assistant system prompt
+│   ├── search_hdr_datasets()           # HDR UK Gateway search
+│   ├── get_comparison_table()          # Dataset comparison tables
+│   ├── linkify_datasets()              # Auto-link dataset mentions
+│   └── export_conversation_md()        # Export chat as Markdown
+│
+├── extract_sail_data_use_register.py   # SAIL data use register extraction
+│   ├── HDRGatewayAPI                   # HDR UK Gateway API client
+│   └── SAILDirectScraper               # Direct SAIL website scraper
+│
+├── system_prompt_v3_structured.txt     # AI assistant knowledge base
 ├── requirements.txt                    # Python dependencies
+│
 ├── .streamlit/
-│   ├── config.toml                     # Streamlit configuration
+│   ├── config.toml                     # Streamlit UI configuration
 │   └── secrets.toml.example            # Example secrets file
-└── README.md                           # This file
+│
+└── scrape_sail_register.py             # Legacy SAIL scraper
 ```
+
+### Data Flow
+
+```
+User Query
+    │
+    ▼
+┌─────────────────────────────────────┐
+│        UK Health Data Assistant      │
+│  ┌─────────────────────────────────┐ │
+│  │   System Prompt (Knowledge)      │ │
+│  │   - UK health data landscape     │ │
+│  │   - Access requirements          │ │
+│  │   - Dataset characteristics      │ │
+│  └─────────────────────────────────┘ │
+│                 │                     │
+│                 ▼                     │
+│  ┌─────────────────────────────────┐ │
+│  │         OpenAI GPT-4o            │ │
+│  └─────────────────────────────────┘ │
+│                 │                     │
+│                 ▼                     │
+│  ┌─────────────────────────────────┐ │
+│  │    Response + Auto-linking       │ │
+│  │    + Comparison Tables           │ │
+│  └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────┐    ┌─────────────────┐
+│ HDR UK Gateway  │    │  SAIL Databank  │
+│   Search API    │    │   Data Register │
+└─────────────────┘    └─────────────────┘
+```
+
+---
+
+## Features
+
+### Core Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| Conversational AI | Natural language queries about UK health datasets |
+| Streaming Responses | Real-time response generation with typing indicator |
+| Dataset Auto-linking | Automatic hyperlinks to official dataset pages |
+| Comparison Tables | Side-by-side dataset comparisons (CPRD vs OpenSAFELY, etc.) |
+| HDR UK Gateway Integration | Live search of the Health Data Gateway |
+| Conversation Export | Download chat history as Markdown |
+| Response Caching | Smart caching to reduce API calls |
+| Usage Analytics | Track query patterns and topics |
+
+### UI Controls
+
+| Control | Location | Options |
+|---------|----------|---------|
+| API Key | Sidebar | Text input (password masked) |
+| Model Selection | Sidebar | gpt-4o, gpt-4o-mini, gpt-4-turbo |
+| Temperature | Sidebar | 0.0 (focused) to 1.0 (creative) |
+| Clear Chat | Sidebar | Reset conversation |
+| Export | Sidebar | Download as Markdown |
+| Search | Sidebar | Filter conversation history |
+
+---
+
+## UK Health Data Landscape Reference
+
+### Terminology
+
+| Term | Also Known As | Context |
+|------|--------------|---------|
+| TRE | Trusted Research Environment | Secure data access platform |
+| SDE | Secure Data Environment | Interchangeable with TRE |
+| Safe Haven | Data Safe Haven | Scottish terminology |
+| SPE | Secure Processing Environment | Digital Economy Act terminology |
+
+### Key Organizations
+
+| Organization | Role | URL |
+|--------------|------|-----|
+| HDR UK | National institute for health data science | hdruk.ac.uk |
+| NHS England | Data custodian (merged with NHS Digital) | england.nhs.uk |
+| ADR UK | Administrative data research | adruk.org |
+| ONS | Official statistics | ons.gov.uk |
+| CLOSER | Longitudinal studies | closer.ac.uk |
+
+### Dataset Quick Reference
+
+| Dataset | Coverage | Primary Use | Access Model |
+|---------|----------|-------------|--------------|
+| CPRD | 60M patients | Observational studies | Fee-based application |
+| OpenSAFELY | 60M patients (TPP) | COVID-19 research | Code repository |
+| UK Biobank | 500K participants | Population genomics | Application |
+| SAIL | Wales (3.5M) | Welsh population studies | TRE |
+| RDS | Scotland (5.5M) | Scottish population studies | Safe Haven |
+| Genomics England | 100K+ genomes | Rare diseases, cancer | Application |
+
+---
+
+## Configuration
+
+### System Prompt
+
+The assistant's behavior is defined in `system_prompt_v3_structured.txt`. Key sections:
+
+- **Role & Purpose**: Dataset discovery and access guidance
+- **Tone**: Professional but accessible
+- **Landscape Context**: Current UK health data ecosystem knowledge
+- **Constraints**: What the assistant should not do
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | No* | Default API key (users can override in UI) |
+
+*Can be set in `.streamlit/secrets.toml` for deployed apps.
+
+---
+
+## Tools & Scripts
+
+### SAIL Data Use Register Extractor
+
+Extract approved research projects from SAIL Databank:
+
+```bash
+python extract_sail_data_use_register.py
+```
+
+**Output**: `sail_data_use_register.csv` with columns:
+- `project_id`, `project_title`, `organisation_name`
+- `lay_summary`, `public_benefit_statement`
+- `datasets_used`, `access_type`, `approval_date`
 
 ---
 
 ## Privacy & Security
 
-- **API Keys:** Stored only in browser session state (not persisted)
-- **Conversations:** Stored in session only (cleared on refresh)
-- **Data:** No user data is logged or stored on the server
-- **OpenAI:** Conversations sent to OpenAI API (see [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy))
+- **API Keys**: Stored in browser session only (not persisted)
+- **Conversations**: In-memory only (cleared on refresh)
+- **No Server Logging**: No user data stored on server
+- **OpenAI Processing**: Queries sent to OpenAI API ([Privacy Policy](https://openai.com/policies/privacy-policy))
+
+---
+
+## Development
+
+### Requirements
+
+```
+streamlit
+openai>=1.0.0
+requests
+pandas
+beautifulsoup4
+lxml
+```
+
+### Testing
+
+```bash
+# Test API key configuration
+python test_api_key.py
+
+# Test SAIL extraction
+python extract_sail_data_use_register.py
+```
 
 ---
 
 ## Contributing
 
-Contributions welcome! Areas for improvement:
-- Export conversation history
-- Add dataset citations and links
-- Integrate with HDR UK Gateway API
-- Multi-language support
-- Response feedback mechanism
+Areas for contribution:
+
+- [ ] Additional dataset comparison tables
+- [ ] Enhanced HDR UK Gateway API integration
+- [ ] Multi-language support (Welsh, Gaelic)
+- [ ] Citation export (BibTeX, RIS)
+- [ ] Webhook notifications for new datasets
+- [ ] MCP server implementation for AI agent integration
+
+---
+
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| 3.1 | HDR UK Gateway integration, comparison tables |
+| 3.0 | Advanced features: caching, feedback, search |
+| 2.0 | Streamlit UI, conversation history |
+| 1.0 | Initial prototype |
 
 ---
 
 ## License
 
-This is a prototype application for educational and research purposes.
-
----
-
-## About
-
-**Version:** 2.0
-**Powered by:** OpenAI GPT-4o
-**Built with:** Streamlit
-
-This assistant helps researchers discover and access UK health datasets across the federated UK health data ecosystem, including:
-- HDR UK (Health Data Research UK)
-- NHS England
-- CPRD (Clinical Practice Research Datalink)
-- OpenSAFELY
-- UK Biobank
-- Research Data Scotland (SAIL)
-- And many more...
-
----
-
-## Disclaimer
-
-This is a beta prototype. Responses are generated by AI and may not reflect the complete UK data landscape. Always verify access routes and dataset information with official data custodians.
+Prototype for educational and research purposes.
 
 ---
 
 ## Support
 
-Questions or issues? Open an issue on [GitHub](https://github.com/Seymo98/uk-health-data-assistant/issues).
+- **Issues**: [GitHub Issues](https://github.com/Seymo98/uk-health-data-assistant/issues)
+- **HDR UK**: [hdruk.ac.uk](https://www.hdruk.ac.uk/)
+- **Gateway**: [healthdatagateway.org](https://www.healthdatagateway.org/)
+
+---
+
+## Disclaimer
+
+This is a beta prototype. AI-generated responses may not reflect the complete UK health data landscape. Always verify dataset information and access routes with official data custodians.
+
+---
+
+<details>
+<summary><strong>AI Agent Metadata (JSON-LD)</strong></summary>
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "UK Health Data Assistant",
+  "description": "Conversational AI assistant for discovering and accessing UK health datasets",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Web, Python 3.8+",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "GBP"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "UK Health Data Assistant Contributors"
+  },
+  "softwareVersion": "3.1",
+  "keywords": [
+    "health data",
+    "UK",
+    "NHS",
+    "HDR UK",
+    "CPRD",
+    "OpenSAFELY",
+    "UK Biobank",
+    "SAIL",
+    "research data",
+    "TRE",
+    "trusted research environment"
+  ],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.healthdatagateway.org/search?search={query}",
+    "query-input": "required name=query"
+  },
+  "hasPart": [
+    {
+      "@type": "Dataset",
+      "name": "HDR UK Innovation Gateway",
+      "url": "https://www.healthdatagateway.org/"
+    },
+    {
+      "@type": "Dataset",
+      "name": "CPRD",
+      "url": "https://cprd.com/"
+    },
+    {
+      "@type": "Dataset",
+      "name": "OpenSAFELY",
+      "url": "https://www.opensafely.org/"
+    },
+    {
+      "@type": "Dataset",
+      "name": "UK Biobank",
+      "url": "https://www.ukbiobank.ac.uk/"
+    },
+    {
+      "@type": "Dataset",
+      "name": "SAIL Databank",
+      "url": "https://saildatabank.com/"
+    }
+  ]
+}
+```
+
+</details>
