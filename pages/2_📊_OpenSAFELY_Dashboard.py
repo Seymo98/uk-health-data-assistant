@@ -259,40 +259,36 @@ with st.expander("About OpenSAFELY", expanded=False):
 @st.cache_resource
 def get_client():
     """Get cached OpenSAFELY client instance."""
-    return OpenSAFELYJobsClient()
+    return OpenSAFELYJobsClient(use_demo_fallback=True)
 
 
 @st.cache_data(ttl=300)
 def load_organizations():
     """Load organizations with caching."""
     client = get_client()
-    try:
-        return client.get_organizations()
-    except Exception as e:
-        st.error(f"Failed to load organizations: {e}")
-        return []
+    orgs = client.get_organizations()
+    return orgs, client.is_using_demo_data
 
 
 @st.cache_data(ttl=300)
 def load_recent_jobs():
     """Load recent job requests with caching."""
     client = get_client()
-    try:
-        return client.get_recent_job_requests(limit=50)
-    except Exception as e:
-        st.error(f"Failed to load recent jobs: {e}")
-        return []
+    jobs = client.get_recent_job_requests(limit=50)
+    return jobs, client.is_using_demo_data
+
+
+def check_if_demo_data():
+    """Check if we're using demo data."""
+    client = get_client()
+    return client.is_using_demo_data
 
 
 @st.cache_data(ttl=300)
 def load_dashboard_stats():
     """Load dashboard statistics with caching."""
     client = get_client()
-    try:
-        return client.get_dashboard_stats()
-    except Exception as e:
-        st.error(f"Failed to load stats: {e}")
-        return None
+    return client.get_dashboard_stats()
 
 
 @st.cache_data(ttl=600)
@@ -301,9 +297,25 @@ def load_org_details(slug: str):
     client = get_client()
     try:
         return client.get_organization_details(slug)
-    except Exception as e:
+    except Exception:
         return None
 
+
+# Check if using demo data and show banner
+organizations_data = load_organizations()
+if isinstance(organizations_data, tuple):
+    organizations_initial, using_demo = organizations_data
+else:
+    organizations_initial = organizations_data
+    using_demo = check_if_demo_data()
+
+if using_demo:
+    st.warning("""
+    **Demo Mode**: Showing representative data based on real OpenSAFELY organizations.
+    Live data will be available when deployed to Streamlit Cloud or run locally.
+
+    [View live data at jobs.opensafely.org](https://jobs.opensafely.org)
+    """)
 
 # Sidebar
 with st.sidebar:
@@ -360,9 +372,13 @@ with tab1:
 
     # Load data
     with st.spinner("Loading dashboard data..."):
-        organizations = load_organizations()
-        recent_jobs = load_recent_jobs()
+        org_result = load_organizations()
+        job_result = load_recent_jobs()
         stats = load_dashboard_stats()
+
+        # Handle tuple returns (data, is_demo)
+        organizations = org_result[0] if isinstance(org_result, tuple) else org_result
+        recent_jobs = job_result[0] if isinstance(job_result, tuple) else job_result
 
     # Key metrics row
     col1, col2, col3, col4 = st.columns(4)
@@ -456,7 +472,8 @@ with tab1:
 with tab2:
     st.subheader("Organizations Using OpenSAFELY")
 
-    organizations = load_organizations()
+    org_result = load_organizations()
+    organizations = org_result[0] if isinstance(org_result, tuple) else org_result
 
     if organizations:
         # Search/filter
@@ -529,7 +546,8 @@ with tab2:
 with tab3:
     st.subheader("Recent Job Requests")
 
-    recent_jobs = load_recent_jobs()
+    job_result = load_recent_jobs()
+    recent_jobs = job_result[0] if isinstance(job_result, tuple) else job_result
 
     if recent_jobs:
         # Status filter
@@ -606,8 +624,10 @@ with tab3:
 with tab4:
     st.subheader("Platform Analytics")
 
-    organizations = load_organizations()
-    recent_jobs = load_recent_jobs()
+    org_result = load_organizations()
+    job_result = load_recent_jobs()
+    organizations = org_result[0] if isinstance(org_result, tuple) else org_result
+    recent_jobs = job_result[0] if isinstance(job_result, tuple) else job_result
 
     if organizations:
         # Organization distribution chart
