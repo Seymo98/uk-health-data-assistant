@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Scrape full metadata for each OpenSAFELY project.
+Scrape project metadata from OpenSAFELY approved projects page.
 
-The event log doesn't include organization names or project details.
-This script visits each project page to extract all available metadata.
+The approved-projects page on opensafely.org has the actual organization data,
+project titles, study leads, and approval dates.
 
 Usage:
     python3 scripts/scrape_project_organizations.py
 
 Output:
+    data/project_organization_mapping.csv
     data/project_organization_mapping.json
 """
 
@@ -17,13 +18,13 @@ import json
 import logging
 import re
 import sys
-import time
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Any
 
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 # Setup logging
 logging.basicConfig(
@@ -36,287 +37,220 @@ logger = logging.getLogger(__name__)
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 DATA_DIR = PROJECT_ROOT / "data"
-CSV_PATH = DATA_DIR / "opensafely_jobs_history.csv"
-OUTPUT_PATH = DATA_DIR / "project_organization_mapping.json"
+CSV_OUTPUT = DATA_DIR / "project_organization_mapping.csv"
+JSON_OUTPUT = DATA_DIR / "project_organization_mapping.json"
+JOBS_CSV = DATA_DIR / "opensafely_jobs_history.csv"
 
-BASE_URL = "https://jobs.opensafely.org"
 USER_AGENT = "UKHealthDataAssistant/1.0 (Project Metadata Scraper)"
 
 
-def get_unique_projects() -> Set[str]:
-    """Extract unique project slugs from the CSV."""
-    if not CSV_PATH.exists():
-        logger.error(f"CSV file not found: {CSV_PATH}")
+def scrape_approved_projects() -> Optional[pd.DataFrame]:
+    """Scrape project metadata from opensafely.org/approved-projects/"""
+
+    url = "https://www.opensafely.org/approved-projects/"
+    logger.info(f"Fetching approved projects from {url}")
+
+    headers = {"User-Agent": USER_AGENT}
+    response = requests.get(url, headers=headers, timeout=60)
+
+    if response.status_code != 200:
+        logger.error(f"Failed to fetch page. Status: {response.status_code}")
+        return None
+
+    logger.info("Page fetched. Parsing project data...")
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    projects_data = []
+
+    # Search for details blocks which contain project info
+    potential_entries = soup.find_all('details')
+
+    # Fallback: if 'details' structure isn't used, search generic blocks
+    if not potential_entries:
+        potential_entries = soup.find_all(['div', 'li'])
+
+    logger.info(f"Scanning {len(potential_entries)} page elements...")
+
+    for entry in potential_entries:
+        text = entry.get_text(" | ", strip=True)
+
+        if "Project #" in text and "Study lead:" in text:
+
+            # Extract Project ID
+            id_match = re.search(r"Project\s*#(\d+)", text)
+            project_id = id_match.group(1) if id_match else None
+
+            # Extract Organisation
+            org_match = re.search(
+                r"Organisation:\s*(.*?)(?:\s\|\sProject type|\s\|\sTopic area|\s\|\sDate|$)",
+                text
+            )
+            organization = org_match.group(1).strip() if org_match else "Unknown"
+
+            # Extract Study Lead
+            lead_match = re.search(
+                r"Study lead:\s*(.*?)(?:\s\|\sOrganisation|\s\|\sProject type|$)",
+                text
+            )
+            study_lead = lead_match.group(1).strip() if lead_match else "Unknown"
+
+            # Extract Title
+            title_match = re.search(
+                r"Project\s*#\d+[:\s\|]+(.*?)(?:\s\|\sStudy lead|\s\|\sThe|\.|$)",
+                text
+            )
+            if title_match:
+                title = title_match.group(1).strip()
+            else:
+                title = text.split(f"Project #{project_id}")[-1].split("|")[0].strip()
+
+            title = title.lstrip(":| ").strip()
+
+            # Extract Approval Date
+            date_match = re.search(r"Date of approval:\s*([\d-]+)", text)
+            approval_date = date_match.group(1).strip() if date_match else None
+
+            # Extract Project Type
+            type_match = re.search(r"Project type:\s*(.*?)(?:\s\|\s|$)", text)
+            project_type = type_match.group(1).strip() if type_match else None
+
+            # Extract Topic Area
+            topic_match = re.search(r"Topic area:\s*(.*?)(?:\s\|\s|$)", text)
+            topic_area = topic_match.group(1).strip() if topic_match else None
+
+            # Project Status
+            status = "Active"
+            if "Completed" in text:
+                status = "Completed"
+
+            projects_data.append({
+                "project_id": project_id,
+                "project_title": title,
+                "organization": organization,
+                "study_lead": study_lead,
+                "approval_date": approval_date,
+                "project_type": project_type,
+                "topic_area": topic_area,
+                "project_status": status,
+            })
+
+    if not projects_data:
+        logger.error("No projects found. Page structure may have changed.")
+        return None
+
+    # Create DataFrame and deduplicate
+    df = pd.DataFrame(projects_data).drop_duplicates(subset=['project_id'])
+
+    # Clean up titles
+    df['project_title'] = df['project_title'].str.split("View project").str[0].str.strip()
+
+    logger.info(f"Found {len(df)} unique approved projects")
+    return df
+
+
+def load_job_history_projects() -> Set[str]:
+    """Get unique project slugs from job history CSV."""
+    if not JOBS_CSV.exists():
+        logger.warning(f"Jobs CSV not found: {JOBS_CSV}")
         return set()
 
     projects = set()
-    with open(CSV_PATH, "r", encoding="utf-8") as f:
+    with open(JOBS_CSV, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # The "organization" column actually contains project slugs
-            project_slug = row.get("organization", "").strip()
-            if project_slug:
-                projects.add(project_slug)
+            slug = row.get('organization', '').strip()  # Actually project slug
+            if slug:
+                projects.add(slug)
 
-    logger.info(f"Found {len(projects)} unique projects in CSV")
+    logger.info(f"Found {len(projects)} unique project slugs in job history")
     return projects
 
 
-def extract_text_after_label(soup: BeautifulSoup, label_patterns: List[str]) -> Optional[str]:
-    """Find text content after a label (dt/dd, th/td, label/span patterns)."""
-    for pattern in label_patterns:
-        # Try dt/dd pattern
-        for dt in soup.find_all("dt"):
-            if pattern.lower() in dt.get_text(strip=True).lower():
-                dd = dt.find_next_sibling("dd")
-                if dd:
-                    return dd.get_text(strip=True)
-
-        # Try th/td pattern
-        for th in soup.find_all("th"):
-            if pattern.lower() in th.get_text(strip=True).lower():
-                td = th.find_next_sibling("td")
-                if td:
-                    return td.get_text(strip=True)
-
-        # Try label pattern
-        for label in soup.find_all(["label", "strong", "b"]):
-            if pattern.lower() in label.get_text(strip=True).lower():
-                parent = label.find_parent()
-                if parent:
-                    # Get text excluding the label
-                    label_text = label.get_text(strip=True)
-                    full_text = parent.get_text(strip=True)
-                    return full_text.replace(label_text, "").strip().lstrip(":").strip()
-
-    return None
-
-
-def extract_links_after_label(soup: BeautifulSoup, label_patterns: List[str]) -> List[Dict[str, str]]:
-    """Find links after a label."""
-    links = []
-    for pattern in label_patterns:
-        for dt in soup.find_all("dt"):
-            if pattern.lower() in dt.get_text(strip=True).lower():
-                dd = dt.find_next_sibling("dd")
-                if dd:
-                    for a in dd.find_all("a"):
-                        links.append({
-                            "name": a.get_text(strip=True),
-                            "url": a.get("href", ""),
-                            "slug": a.get("href", "").strip("/").split("/")[0] if a.get("href") else None
-                        })
-    return links
-
-
-def scrape_project_metadata(session: requests.Session, project_slug: str) -> Dict[str, Any]:
-    """Scrape all metadata from a project page."""
-    url = f"{BASE_URL}/{project_slug}/"
-
-    # Navigation items to exclude (these appear on every page)
-    NAV_ITEMS = {
-        "event-log", "event log", "status", "organisations", "organizations",
-        "home", "about", "help", "docs", "documentation", "login", "logout",
-        "staff", "admin", "api", "static", "interactive"
-    }
-
-    result = {
-        "project_slug": project_slug,
-        "url": url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        # Core fields
-        "project_name": None,
-        "organizations": [],
-        "status": None,
-        "description": None,
-        # Counts
-        "member_count": None,
-        "workspace_count": None,
-        "job_request_count": None,
-        # Links
-        "github_url": None,
-        "documentation_url": None,
-        # Dates
-        "created_at": None,
-        "updated_at": None,
-        # Raw data for debugging
-        "all_metadata": {},
-        "error": None,
-    }
-
-    try:
-        response = session.get(url, timeout=30)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "lxml")
-
-        # Project name from h1
-        h1 = soup.find("h1")
-        if h1:
-            result["project_name"] = h1.get_text(strip=True)
-
-        # Description - often in a <p> after the h1 or in a specific section
-        desc_elem = soup.find("p", class_=re.compile(r"desc|summary|lead", re.IGNORECASE))
-        if not desc_elem:
-            # Try first paragraph after h1
-            if h1:
-                desc_elem = h1.find_next("p")
-        if desc_elem:
-            desc_text = desc_elem.get_text(strip=True)
-            if len(desc_text) > 20:  # Likely a real description
-                result["description"] = desc_text
-
-        # Collect all dt/dd pairs for reference FIRST (this often has org info)
-        for dt in soup.find_all("dt"):
-            dd = dt.find_next_sibling("dd")
-            if dd:
-                key = dt.get_text(strip=True).lower().replace(":", "").strip()
-                value = dd.get_text(strip=True)
-                result["all_metadata"][key] = value
-
-                # Check if this is the organizations field
-                if "organisation" in key or "organization" in key:
-                    for a in dd.find_all("a"):
-                        org_name = a.get_text(strip=True)
-                        org_href = a.get("href", "")
-                        org_slug = org_href.strip("/").split("/")[0] if org_href else None
-
-                        # Skip if it's a nav item or the project itself
-                        if org_slug and org_slug.lower() not in NAV_ITEMS and org_slug != project_slug:
-                            result["organizations"].append({
-                                "name": org_name,
-                                "url": org_href,
-                                "slug": org_slug
-                            })
-
-        # Status from metadata
-        if "status" in result["all_metadata"]:
-            result["status"] = result["all_metadata"]["status"].lower()
-
-        # Member count
-        for key in result["all_metadata"]:
-            if "member" in key or "researcher" in key:
-                match = re.search(r"(\d+)", result["all_metadata"][key])
-                if match:
-                    result["member_count"] = int(match.group(1))
-                    break
-
-        # Workspace count
-        for key in result["all_metadata"]:
-            if "workspace" in key:
-                match = re.search(r"(\d+)", result["all_metadata"][key])
-                if match:
-                    result["workspace_count"] = int(match.group(1))
-                    break
-
-        # GitHub link
-        for a in soup.find_all("a", href=re.compile(r"github\.com", re.IGNORECASE)):
-            result["github_url"] = a.get("href")
-            break
-
-        # Look for counts in the page text
-        for text in soup.stripped_strings:
-            match = re.match(r"(\d+)\s+(workspace|job|member|request)", text.lower())
-            if match:
-                count = int(match.group(1))
-                item_type = match.group(2)
-                result["all_metadata"][f"{item_type}_count_from_text"] = count
-
-    except requests.RequestException as e:
-        logger.error(f"Failed to scrape {url}: {e}")
-        result["error"] = str(e)
-
-    return result
+def create_slug_from_id(project_id: str) -> str:
+    """Create a potential slug pattern from project ID."""
+    return f"{project_id}-"
 
 
 def main():
-    """Main scraping function."""
+    """Main function to scrape and save project metadata."""
     logger.info("Starting project metadata scraper")
 
-    # Get unique projects
-    projects = get_unique_projects()
-    if not projects:
-        logger.error("No projects found to scrape")
+    # Scrape approved projects
+    df = scrape_approved_projects()
+
+    if df is None or df.empty:
+        logger.error("Failed to scrape projects")
         return
 
-    # Setup session
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    })
+    # Load existing job history projects for matching
+    job_projects = load_job_history_projects()
 
-    # Scrape each project
-    mapping = {
+    # Try to match approved projects to job history slugs
+    def find_matching_slug(row):
+        project_id = row['project_id']
+        title = row['project_title'].lower() if pd.notna(row['project_title']) else ''
+
+        for slug in job_projects:
+            # Match by project ID prefix (e.g., "112-" matches "112-coronavirus...")
+            if slug.startswith(f"{project_id}-"):
+                return slug
+            # Match by title similarity (simplified)
+            title_words = set(re.findall(r'\w+', title))
+            slug_words = set(slug.split('-'))
+            if len(title_words & slug_words) >= 3:
+                return slug
+        return None
+
+    df['job_history_slug'] = df.apply(find_matching_slug, axis=1)
+
+    matched = df['job_history_slug'].notna().sum()
+    logger.info(f"Matched {matched}/{len(df)} projects to job history slugs")
+
+    # Save CSV
+    DATA_DIR.mkdir(exist_ok=True)
+    df.to_csv(CSV_OUTPUT, index=False)
+    logger.info(f"Saved CSV to {CSV_OUTPUT}")
+
+    # Save JSON with additional metadata
+    result = {
         "metadata": {
             "scraped_at": datetime.utcnow().isoformat(),
-            "total_projects": len(projects),
-            "source": "jobs.opensafely.org project pages",
+            "source": "https://www.opensafely.org/approved-projects/",
+            "total_projects": len(df),
+            "matched_to_job_history": matched,
         },
-        "projects": {},
-        "organizations": {},  # Aggregate org info
+        "projects": df.to_dict(orient='records'),
+        "organizations": {}
     }
 
-    all_orgs = {}  # Track all organizations found
+    # Aggregate by organization
+    for _, row in df.iterrows():
+        org = row['organization']
+        if org and org != "Unknown":
+            if org not in result["organizations"]:
+                result["organizations"][org] = {
+                    "name": org,
+                    "project_count": 0,
+                    "project_ids": []
+                }
+            result["organizations"][org]["project_count"] += 1
+            result["organizations"][org]["project_ids"].append(row['project_id'])
 
-    for i, project_slug in enumerate(sorted(projects), 1):
-        logger.info(f"Scraping {i}/{len(projects)}: {project_slug}")
+    with open(JSON_OUTPUT, 'w', encoding='utf-8') as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
 
-        result = scrape_project_metadata(session, project_slug)
-        mapping["projects"][project_slug] = result
+    logger.info(f"Saved JSON to {JSON_OUTPUT}")
 
-        # Track organizations
-        for org in result.get("organizations", []):
-            org_slug = org.get("slug")
-            if org_slug:
-                if org_slug not in all_orgs:
-                    all_orgs[org_slug] = {
-                        "name": org.get("name"),
-                        "slug": org_slug,
-                        "projects": []
-                    }
-                all_orgs[org_slug]["projects"].append(project_slug)
-
-        # Rate limiting - be nice to the server
-        if i < len(projects):
-            time.sleep(0.5)
-
-        # Progress update every 20 projects
-        if i % 20 == 0:
-            logger.info(f"Progress: {i}/{len(projects)} projects scraped")
-
-    # Add organization summary
-    mapping["organizations"] = all_orgs
-
-    # Count results
-    with_orgs = sum(1 for p in mapping["projects"].values() if p.get("organizations"))
-    with_status = sum(1 for p in mapping["projects"].values() if p.get("status"))
-    with_github = sum(1 for p in mapping["projects"].values() if p.get("github_url"))
-    errors = sum(1 for p in mapping["projects"].values() if p.get("error"))
-
-    mapping["metadata"]["projects_with_organizations"] = with_orgs
-    mapping["metadata"]["projects_with_status"] = with_status
-    mapping["metadata"]["projects_with_github"] = with_github
-    mapping["metadata"]["projects_with_errors"] = errors
-    mapping["metadata"]["unique_organizations"] = len(all_orgs)
-
-    # Save output
-    DATA_DIR.mkdir(exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(mapping, f, indent=2, ensure_ascii=False)
-
-    logger.info(f"Saved mapping to {OUTPUT_PATH}")
-    logger.info(f"Results:")
-    logger.info(f"  Projects scraped: {len(projects)}")
-    logger.info(f"  With organizations: {with_orgs}")
-    logger.info(f"  With status: {with_status}")
-    logger.info(f"  With GitHub: {with_github}")
-    logger.info(f"  Errors: {errors}")
-    logger.info(f"  Unique organizations: {len(all_orgs)}")
-
-    if all_orgs:
-        logger.info("\nOrganizations found:")
-        for org_slug, org_data in sorted(all_orgs.items(), key=lambda x: -len(x[1]["projects"])):
-            logger.info(f"  {org_data['name']}: {len(org_data['projects'])} projects")
+    # Print organization summary
+    logger.info(f"\nUnique organizations: {len(result['organizations'])}")
+    logger.info("\nTop organizations by project count:")
+    sorted_orgs = sorted(
+        result["organizations"].items(),
+        key=lambda x: x[1]["project_count"],
+        reverse=True
+    )[:15]
+    for org_name, org_data in sorted_orgs:
+        logger.info(f"  {org_name}: {org_data['project_count']} projects")
 
 
 if __name__ == "__main__":
