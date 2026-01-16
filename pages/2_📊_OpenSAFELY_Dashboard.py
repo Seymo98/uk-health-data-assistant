@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 try:
     from opensafely_jobs import (
         OpenSAFELYJobsClient,
+        OpenSAFELYDataLoader,
         Organization,
         Project,
         JobRequest,
@@ -255,38 +256,73 @@ with st.expander("About OpenSAFELY", expanded=False):
     [Learn more at opensafely.org](https://www.opensafely.org)
     """)
 
-# Initialize client
+# Initialize data sources
 @st.cache_resource
 def get_client():
     """Get cached OpenSAFELY client instance."""
     return OpenSAFELYJobsClient(use_demo_fallback=True)
 
 
+@st.cache_resource
+def get_data_loader():
+    """Get cached data loader for CSV-based data."""
+    return OpenSAFELYDataLoader()
+
+
+@st.cache_data(ttl=300)
+def load_csv_stats():
+    """Load statistics from CSV data."""
+    loader = get_data_loader()
+    if loader.has_data:
+        return loader.get_stats()
+    return None
+
+
 @st.cache_data(ttl=300)
 def load_organizations():
-    """Load organizations with caching."""
+    """Load organizations - from CSV if available, otherwise live/demo."""
+    loader = get_data_loader()
+    if loader.has_data:
+        orgs = loader.get_organizations_from_jobs()
+        return orgs, False  # Not using demo data
+    # Fallback to live client
     client = get_client()
     orgs = client.get_organizations()
     return orgs, client.is_using_demo_data
 
 
 @st.cache_data(ttl=300)
-def load_recent_jobs():
-    """Load recent job requests with caching."""
+def load_recent_jobs(limit: int = 50):
+    """Load recent jobs - from CSV if available, otherwise live/demo."""
+    loader = get_data_loader()
+    if loader.has_data:
+        jobs = loader.get_job_requests(limit=limit)
+        return jobs, False
+    # Fallback to live client
     client = get_client()
-    jobs = client.get_recent_job_requests(limit=50)
+    jobs = client.get_recent_job_requests(limit=limit)
     return jobs, client.is_using_demo_data
 
 
-def check_if_demo_data():
-    """Check if we're using demo data."""
+def check_data_source():
+    """Check what data source is being used."""
+    loader = get_data_loader()
+    if loader.has_data:
+        metadata = loader.load_metadata()
+        return "csv", metadata.get("last_updated_formatted", "Unknown")
     client = get_client()
-    return client.is_using_demo_data
+    _ = client.get_organizations()  # Trigger load to check demo status
+    if client.is_using_demo_data:
+        return "demo", None
+    return "live", None
 
 
 @st.cache_data(ttl=300)
 def load_dashboard_stats():
-    """Load dashboard statistics with caching."""
+    """Load dashboard statistics."""
+    loader = get_data_loader()
+    if loader.has_data:
+        return loader.get_stats()
     client = get_client()
     return client.get_dashboard_stats()
 
@@ -301,18 +337,25 @@ def load_org_details(slug: str):
         return None
 
 
-# Check if using demo data and show banner
-organizations_data = load_organizations()
-if isinstance(organizations_data, tuple):
-    organizations_initial, using_demo = organizations_data
-else:
-    organizations_initial = organizations_data
-    using_demo = check_if_demo_data()
+# Check data source and show appropriate banner
+data_source, last_updated = check_data_source()
 
-if using_demo:
+if data_source == "csv":
+    st.success(f"""
+    **Historical Data Mode**: Showing complete job history from OpenSAFELY.
+
+    **Last Updated:** {last_updated}
+
+    [View live data at jobs.opensafely.org](https://jobs.opensafely.org)
+    """)
+elif data_source == "demo":
     st.warning("""
     **Demo Mode**: Showing representative data based on real OpenSAFELY organizations.
-    Live data will be available when deployed to Streamlit Cloud or run locally.
+
+    To load complete historical data, run:
+    ```
+    python scripts/scrape_opensafely_event_log.py
+    ```
 
     [View live data at jobs.opensafely.org](https://jobs.opensafely.org)
     """)
