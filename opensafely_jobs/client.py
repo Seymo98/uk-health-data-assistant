@@ -295,6 +295,13 @@ class OpenSAFELYJobsClient:
                     unique_orgs.append(org)
 
             self._cache[cache_key] = (time.time(), unique_orgs)
+
+            # If we got suspiciously few results, fall back to demo data
+            if len(unique_orgs) < 5 and self.use_demo_fallback:
+                logger.info(f"Only found {len(unique_orgs)} orgs, falling back to demo data")
+                self._using_demo_data = True
+                return self.DEMO_ORGANIZATIONS.copy()
+
             return unique_orgs
 
         except Exception as e:
@@ -428,6 +435,12 @@ class OpenSAFELYJobsClient:
                 except Exception as e:
                     logger.debug(f"Failed to parse job request row: {e}")
                     continue
+
+            # If we got no results, fall back to demo data
+            if len(job_requests) == 0 and self.use_demo_fallback:
+                logger.info("No jobs found, falling back to demo data")
+                self._using_demo_data = True
+                return self._get_demo_job_requests()[:limit]
 
             return job_requests[:limit]
 
