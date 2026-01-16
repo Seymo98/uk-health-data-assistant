@@ -341,15 +341,43 @@ def load_org_details(slug: str):
 data_source, last_updated = check_data_source()
 
 if data_source == "csv":
+    csv_stats = load_csv_stats()
     st.success(f"""
-    **Historical Data Mode**: Showing complete job history from OpenSAFELY event log.
+    **Historical Data Mode**: Complete job history from OpenSAFELY event log.
 
-    **Last Updated:** {last_updated} | **Total Jobs:** {load_csv_stats().get('total_jobs', 0):,} | **Success Rate:** {load_csv_stats().get('success_rate', 0):.1f}%
-
-    *Note: The event log shows Projects and Workspaces (organization data requires additional scraping).*
-
-    [View live data at jobs.opensafely.org](https://jobs.opensafely.org)
+    **Last Updated:** {last_updated}
     """)
+
+    # Key metrics in columns
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.metric("Job Requests", f"{csv_stats.get('total_job_requests', 0):,}")
+    with m2:
+        st.metric("Individual Jobs", f"{csv_stats.get('total_individual_jobs', 0):,}")
+    with m3:
+        st.metric("Request Success", f"{csv_stats.get('request_success_rate', 0):.1f}%",
+                  help="% of job requests that completed successfully")
+    with m4:
+        st.metric("Job Success", f"{csv_stats.get('job_success_rate', 0):.1f}%",
+                  help="% of individual jobs in successful requests")
+
+    with st.expander("Understanding these metrics"):
+        st.markdown("""
+        **Why two success rates?**
+
+        - **Job Request**: A batch submission that can contain multiple individual jobs
+        - **Individual Job**: A single task within a request
+
+        | Metric | Value | Meaning |
+        |--------|-------|---------|
+        | Request Success Rate | ~63% | Most requests complete successfully |
+        | Job Success Rate | ~37% | But failed requests contain more jobs on average |
+
+        **Key insight:** Failed requests average **14.7 jobs** while successful requests average **5.0 jobs**.
+        This means larger batch jobs are more likely to have at least one failure, which marks the entire request as failed.
+
+        *Note: The event log shows Projects and Workspaces. Organization data requires additional scraping.*
+        """)
 elif data_source == "demo":
     st.warning("""
     **Demo Mode**: Showing representative data based on real OpenSAFELY organizations.

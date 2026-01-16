@@ -911,22 +911,47 @@ class OpenSAFELYDataLoader:
                 date_key = dt.strftime("%Y-%m-%d")
                 jobs_by_date[date_key] = jobs_by_date.get(date_key, 0) + 1
 
-        # Calculate success rate
-        succeeded = status_counts.get("succeeded", 0)
-        failed = status_counts.get("failed", 0)
-        completed = succeeded + failed
-        success_rate = (succeeded / completed * 100) if completed > 0 else 0
+        # Calculate REQUEST-level success rate
+        succeeded_requests = status_counts.get("succeeded", 0)
+        failed_requests = status_counts.get("failed", 0)
+        completed_requests = succeeded_requests + failed_requests
+        request_success_rate = (succeeded_requests / completed_requests * 100) if completed_requests > 0 else 0
+
+        # Calculate JOB-level statistics (individual jobs within requests)
+        total_individual_jobs = 0
+        jobs_in_succeeded_requests = 0
+        jobs_in_failed_requests = 0
+        for job in jobs:
+            job_count = int(job.get("jobs_total") or 0)
+            total_individual_jobs += job_count
+            status = job.get("status", "unknown")
+            if status == "succeeded":
+                jobs_in_succeeded_requests += job_count
+            elif status == "failed":
+                jobs_in_failed_requests += job_count
+
+        job_success_rate = (jobs_in_succeeded_requests / (jobs_in_succeeded_requests + jobs_in_failed_requests) * 100) if (jobs_in_succeeded_requests + jobs_in_failed_requests) > 0 else 0
 
         return {
+            # Request-level metrics
+            "total_job_requests": len(jobs),
+            "requests_succeeded": succeeded_requests,
+            "requests_failed": failed_requests,
+            "request_success_rate": request_success_rate,
+            # Job-level metrics (individual jobs within requests)
+            "total_individual_jobs": total_individual_jobs,
+            "jobs_in_succeeded_requests": jobs_in_succeeded_requests,
+            "jobs_in_failed_requests": jobs_in_failed_requests,
+            "job_success_rate": job_success_rate,
+            # Legacy field for compatibility
             "total_jobs": len(jobs),
+            "success_rate": request_success_rate,
+            # Other counts
             "total_projects": len(unique_projects),
             "total_organizations": len(org_counts),
             "total_users": len(unique_users),
-            "jobs_succeeded": succeeded,
-            "jobs_failed": failed,
             "jobs_running": status_counts.get("running", 0),
             "jobs_pending": status_counts.get("pending", 0),
-            "success_rate": success_rate,
             "status_counts": status_counts,
             "backend_counts": backend_counts,
             "org_counts": org_counts,
