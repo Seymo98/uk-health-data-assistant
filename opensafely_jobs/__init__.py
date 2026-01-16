@@ -5,7 +5,7 @@ A Python client for accessing public data from jobs.opensafely.org,
 OpenSAFELY's transparent job execution platform.
 """
 
-from .client import OpenSAFELYJobsClient
+from .client import OpenSAFELYJobsClient, OpenSAFELYDataLoader
 from .models import (
     Organization,
     Project,
@@ -19,6 +19,7 @@ from .models import (
 
 __all__ = [
     "OpenSAFELYJobsClient",
+    "OpenSAFELYDataLoader",
     "Organization",
     "Project",
     "Workspace",

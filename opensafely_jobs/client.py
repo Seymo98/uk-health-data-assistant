@@ -1,14 +1,20 @@
 """
 OpenSAFELY Jobs Client.
 
-A client for accessing public data from jobs.opensafely.org via HTML scraping.
+A client for accessing public data from jobs.opensafely.org via HTML scraping
+or from a pre-scraped CSV file for complete historical data.
+
 OpenSAFELY publishes machine-readable logs of every query run against NHS data.
 """
 
+import csv
+import json
 import logging
+import os
 import re
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional, List, Dict, Any, Generator
 from urllib.parse import urljoin
 
@@ -645,3 +651,252 @@ class OpenSAFELYJobsClient:
     def clear_cache(self):
         """Clear the internal cache."""
         self._cache.clear()
+
+
+class OpenSAFELYDataLoader:
+    """
+    Load OpenSAFELY job data from pre-scraped CSV files.
+
+    This provides complete historical data that was scraped using the
+    scrape_opensafely_event_log.py script.
+    """
+
+    DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"
+    CSV_FILENAME = "opensafely_jobs_history.csv"
+    METADATA_FILENAME = "opensafely_jobs_metadata.json"
+
+    def __init__(self, data_dir: Optional[Path] = None):
+        """
+        Initialize the data loader.
+
+        Args:
+            data_dir: Directory containing the CSV and metadata files
+        """
+        self.data_dir = Path(data_dir) if data_dir else self.DEFAULT_DATA_DIR
+        self._jobs_cache: Optional[List[Dict[str, Any]]] = None
+        self._metadata_cache: Optional[Dict[str, Any]] = None
+
+    @property
+    def csv_path(self) -> Path:
+        return self.data_dir / self.CSV_FILENAME
+
+    @property
+    def metadata_path(self) -> Path:
+        return self.data_dir / self.METADATA_FILENAME
+
+    @property
+    def has_data(self) -> bool:
+        """Check if CSV data file exists."""
+        return self.csv_path.exists()
+
+    def load_metadata(self) -> Dict[str, Any]:
+        """Load metadata about the scraped data."""
+        if self._metadata_cache is not None:
+            return self._metadata_cache
+
+        if not self.metadata_path.exists():
+            return {
+                "last_updated": None,
+                "last_updated_formatted": "Never",
+                "total_jobs": 0,
+                "total_pages": 0,
+            }
+
+        try:
+            with open(self.metadata_path, "r") as f:
+                self._metadata_cache = json.load(f)
+                return self._metadata_cache
+        except Exception as e:
+            logger.error(f"Failed to load metadata: {e}")
+            return {"last_updated": None, "last_updated_formatted": "Error loading"}
+
+    def load_jobs(self) -> List[Dict[str, Any]]:
+        """Load all jobs from the CSV file."""
+        if self._jobs_cache is not None:
+            return self._jobs_cache
+
+        if not self.csv_path.exists():
+            logger.warning(f"CSV file not found: {self.csv_path}")
+            return []
+
+        try:
+            jobs = []
+            with open(self.csv_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Convert numeric fields
+                    row["jobs_completed"] = int(row.get("jobs_completed", 0) or 0)
+                    row["jobs_total"] = int(row.get("jobs_total", 0) or 0)
+                    jobs.append(row)
+
+            self._jobs_cache = jobs
+            logger.info(f"Loaded {len(jobs)} jobs from CSV")
+            return jobs
+
+        except Exception as e:
+            logger.error(f"Failed to load jobs from CSV: {e}")
+            return []
+
+    def get_job_requests(self, limit: Optional[int] = None) -> List[JobRequest]:
+        """
+        Get job requests from the CSV data.
+
+        Args:
+            limit: Maximum number of jobs to return (most recent first)
+
+        Returns:
+            List of JobRequest objects
+        """
+        jobs = self.load_jobs()
+
+        # Sort by date (most recent first)
+        def parse_date(job):
+            iso = job.get("started_at_iso", "")
+            if iso:
+                try:
+                    return datetime.fromisoformat(iso.replace("Z", "+00:00"))
+                except:
+                    pass
+            return datetime.min
+
+        sorted_jobs = sorted(jobs, key=parse_date, reverse=True)
+
+        if limit:
+            sorted_jobs = sorted_jobs[:limit]
+
+        job_requests = []
+        for job in sorted_jobs:
+            status = JobStatus.from_string(job.get("status", "unknown"))
+            created_at = None
+            iso = job.get("started_at_iso", "")
+            if iso:
+                try:
+                    created_at = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+                except:
+                    pass
+
+            jr = JobRequest(
+                identifier=job.get("job_request_id", ""),
+                sha="",
+                status=status,
+                workspace_name=job.get("workspace", ""),
+                project_name=job.get("project", ""),
+                backend_name=job.get("backend", ""),
+                created_by=job.get("user", ""),
+                created_at=created_at,
+            )
+            job_requests.append(jr)
+
+        return job_requests
+
+    def get_organizations_from_jobs(self) -> List[Organization]:
+        """
+        Extract unique organizations from job data.
+
+        Returns:
+            List of Organization objects with project counts
+        """
+        jobs = self.load_jobs()
+
+        # Count projects per organization
+        org_projects: Dict[str, set] = {}
+        for job in jobs:
+            org = job.get("organization", "")
+            project = job.get("project", "")
+            if org:
+                if org not in org_projects:
+                    org_projects[org] = set()
+                if project:
+                    org_projects[org].add(project)
+
+        organizations = []
+        for org_name, projects in sorted(org_projects.items(), key=lambda x: len(x[1]), reverse=True):
+            organizations.append(Organization(
+                name=org_name.replace("-", " ").title(),
+                slug=org_name,
+                project_count=len(projects),
+            ))
+
+        return organizations
+
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Get aggregate statistics from the CSV data.
+
+        Returns:
+            Dictionary with various statistics
+        """
+        jobs = self.load_jobs()
+        metadata = self.load_metadata()
+
+        if not jobs:
+            return {
+                "total_jobs": 0,
+                "last_updated": metadata.get("last_updated_formatted", "Never"),
+                **metadata
+            }
+
+        # Count by status
+        status_counts = {}
+        for job in jobs:
+            status = job.get("status", "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+        # Count by backend
+        backend_counts = {}
+        for job in jobs:
+            backend = job.get("backend", "unknown")
+            backend_counts[backend] = backend_counts.get(backend, 0) + 1
+
+        # Count by organization
+        org_counts = {}
+        for job in jobs:
+            org = job.get("organization", "unknown")
+            org_counts[org] = org_counts.get(org, 0) + 1
+
+        # Count unique projects
+        unique_projects = set(job.get("project", "") for job in jobs if job.get("project"))
+
+        # Count unique users
+        unique_users = set(job.get("user", "") for job in jobs if job.get("user"))
+
+        # Jobs by date (last 30 days worth)
+        jobs_by_date = {}
+        for job in jobs:
+            iso = job.get("started_at_iso", "")
+            if iso:
+                try:
+                    dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+                    date_key = dt.strftime("%Y-%m-%d")
+                    jobs_by_date[date_key] = jobs_by_date.get(date_key, 0) + 1
+                except:
+                    pass
+
+        # Calculate success rate
+        succeeded = status_counts.get("succeeded", 0)
+        failed = status_counts.get("failed", 0)
+        completed = succeeded + failed
+        success_rate = (succeeded / completed * 100) if completed > 0 else 0
+
+        return {
+            "total_jobs": len(jobs),
+            "total_projects": len(unique_projects),
+            "total_organizations": len(org_counts),
+            "total_users": len(unique_users),
+            "jobs_succeeded": succeeded,
+            "jobs_failed": failed,
+            "jobs_running": status_counts.get("running", 0),
+            "jobs_pending": status_counts.get("pending", 0),
+            "success_rate": success_rate,
+            "status_counts": status_counts,
+            "backend_counts": backend_counts,
+            "org_counts": org_counts,
+            "jobs_by_date": dict(sorted(jobs_by_date.items())[-30:]),  # Last 30 days
+            "last_updated": metadata.get("last_updated_formatted", "Unknown"),
+            "last_updated_iso": metadata.get("last_updated"),
+        }
+
+    def clear_cache(self):
+        """Clear cached data."""
+        self._jobs_cache = None
+        self._metadata_cache = None
