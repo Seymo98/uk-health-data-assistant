@@ -113,6 +113,13 @@ def scrape_project_metadata(session: requests.Session, project_slug: str) -> Dic
     """Scrape all metadata from a project page."""
     url = f"{BASE_URL}/{project_slug}/"
 
+    # Navigation items to exclude (these appear on every page)
+    NAV_ITEMS = {
+        "event-log", "event log", "status", "organisations", "organizations",
+        "home", "about", "help", "docs", "documentation", "login", "logout",
+        "staff", "admin", "api", "static", "interactive"
+    }
+
     result = {
         "project_slug": project_slug,
         "url": url,
@@ -158,66 +165,7 @@ def scrape_project_metadata(session: requests.Session, project_slug: str) -> Dic
             if len(desc_text) > 20:  # Likely a real description
                 result["description"] = desc_text
 
-        # Organizations - try multiple patterns
-        result["organizations"] = extract_links_after_label(
-            soup, ["organisation", "organization", "org"]
-        )
-
-        # If no orgs found via dt/dd, look for org links in the page
-        if not result["organizations"]:
-            # Look for links that appear to be organization pages
-            for link in soup.find_all("a", href=re.compile(r"^/[a-z0-9-]+/$")):
-                href = link.get("href", "")
-                text = link.get_text(strip=True)
-                slug = href.strip("/")
-
-                # Skip if it's the project itself or common non-org links
-                if slug == project_slug:
-                    continue
-                if any(x in slug for x in ["login", "logout", "staff", "admin", "static", "api", "docs"]):
-                    continue
-                if "/" in slug:  # Not a top-level page
-                    continue
-
-                # Check if this looks like an org (has reasonable name)
-                if text and len(text) > 2 and text.lower() not in ["home", "about", "help"]:
-                    # Avoid duplicates
-                    existing = [o["slug"] for o in result["organizations"]]
-                    if slug not in existing:
-                        result["organizations"].append({
-                            "name": text,
-                            "url": href,
-                            "slug": slug
-                        })
-
-        # Status
-        status_text = extract_text_after_label(soup, ["status"])
-        if status_text:
-            result["status"] = status_text.lower()
-            result["all_metadata"]["status"] = status_text
-
-        # Member count
-        members_text = extract_text_after_label(soup, ["member", "researcher", "team"])
-        if members_text:
-            result["all_metadata"]["members_raw"] = members_text
-            match = re.search(r"(\d+)", members_text)
-            if match:
-                result["member_count"] = int(match.group(1))
-
-        # Workspace count
-        ws_text = extract_text_after_label(soup, ["workspace"])
-        if ws_text:
-            result["all_metadata"]["workspaces_raw"] = ws_text
-            match = re.search(r"(\d+)", ws_text)
-            if match:
-                result["workspace_count"] = int(match.group(1))
-
-        # GitHub link
-        for a in soup.find_all("a", href=re.compile(r"github\.com", re.IGNORECASE)):
-            result["github_url"] = a.get("href")
-            break
-
-        # Collect all dt/dd pairs for reference
+        # Collect all dt/dd pairs for reference FIRST (this often has org info)
         for dt in soup.find_all("dt"):
             dd = dt.find_next_sibling("dd")
             if dd:
@@ -225,9 +173,48 @@ def scrape_project_metadata(session: requests.Session, project_slug: str) -> Dic
                 value = dd.get_text(strip=True)
                 result["all_metadata"][key] = value
 
-        # Look for counts in the page (workspaces, jobs, etc.)
+                # Check if this is the organizations field
+                if "organisation" in key or "organization" in key:
+                    for a in dd.find_all("a"):
+                        org_name = a.get_text(strip=True)
+                        org_href = a.get("href", "")
+                        org_slug = org_href.strip("/").split("/")[0] if org_href else None
+
+                        # Skip if it's a nav item or the project itself
+                        if org_slug and org_slug.lower() not in NAV_ITEMS and org_slug != project_slug:
+                            result["organizations"].append({
+                                "name": org_name,
+                                "url": org_href,
+                                "slug": org_slug
+                            })
+
+        # Status from metadata
+        if "status" in result["all_metadata"]:
+            result["status"] = result["all_metadata"]["status"].lower()
+
+        # Member count
+        for key in result["all_metadata"]:
+            if "member" in key or "researcher" in key:
+                match = re.search(r"(\d+)", result["all_metadata"][key])
+                if match:
+                    result["member_count"] = int(match.group(1))
+                    break
+
+        # Workspace count
+        for key in result["all_metadata"]:
+            if "workspace" in key:
+                match = re.search(r"(\d+)", result["all_metadata"][key])
+                if match:
+                    result["workspace_count"] = int(match.group(1))
+                    break
+
+        # GitHub link
+        for a in soup.find_all("a", href=re.compile(r"github\.com", re.IGNORECASE)):
+            result["github_url"] = a.get("href")
+            break
+
+        # Look for counts in the page text
         for text in soup.stripped_strings:
-            # Pattern: "X workspaces" or "X job requests"
             match = re.match(r"(\d+)\s+(workspace|job|member|request)", text.lower())
             if match:
                 count = int(match.group(1))
