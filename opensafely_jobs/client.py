@@ -91,38 +91,45 @@ class OpenSAFELYJobsClient:
         Organization(name="University College London", slug="ucl", project_count=5),
     ]
 
-    DEMO_JOB_REQUESTS = [
-        JobRequest(identifier="jr-001", sha="abc123", status=JobStatus.SUCCEEDED,
-                   workspace_name="covid-vaccine-effectiveness", project_name="opensafely",
-                   created_at=datetime.now() - timedelta(minutes=15)),
-        JobRequest(identifier="jr-002", sha="def456", status=JobStatus.SUCCEEDED,
-                   workspace_name="long-covid-risk-factors", project_name="bennett-institute",
-                   created_at=datetime.now() - timedelta(minutes=45)),
-        JobRequest(identifier="jr-003", sha="ghi789", status=JobStatus.RUNNING,
-                   workspace_name="antibiotic-prescribing", project_name="university-of-oxford",
-                   created_at=datetime.now() - timedelta(hours=1)),
-        JobRequest(identifier="jr-004", sha="jkl012", status=JobStatus.SUCCEEDED,
-                   workspace_name="diabetes-outcomes", project_name="lshtm",
-                   created_at=datetime.now() - timedelta(hours=2)),
-        JobRequest(identifier="jr-005", sha="mno345", status=JobStatus.FAILED,
-                   workspace_name="mental-health-trends", project_name="kings-college-london",
-                   created_at=datetime.now() - timedelta(hours=3)),
-        JobRequest(identifier="jr-006", sha="pqr678", status=JobStatus.SUCCEEDED,
-                   workspace_name="cardiovascular-risk", project_name="imperial-college-london",
-                   created_at=datetime.now() - timedelta(hours=4)),
-        JobRequest(identifier="jr-007", sha="stu901", status=JobStatus.SUCCEEDED,
-                   workspace_name="respiratory-infections", project_name="university-of-bristol",
-                   created_at=datetime.now() - timedelta(hours=5)),
-        JobRequest(identifier="jr-008", sha="vwx234", status=JobStatus.PENDING,
-                   workspace_name="cancer-screening", project_name="university-of-cambridge",
-                   created_at=datetime.now() - timedelta(hours=6)),
-        JobRequest(identifier="jr-009", sha="yza567", status=JobStatus.SUCCEEDED,
-                   workspace_name="vaccine-safety-monitoring", project_name="ukhsa",
-                   created_at=datetime.now() - timedelta(hours=8)),
-        JobRequest(identifier="jr-010", sha="bcd890", status=JobStatus.SUCCEEDED,
-                   workspace_name="primary-care-workload", project_name="nhs-england",
-                   created_at=datetime.now() - timedelta(hours=12)),
+    # Demo job request templates (timestamps added dynamically)
+    DEMO_JOB_TEMPLATES = [
+        {"identifier": "jr-001", "sha": "abc123", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "covid-vaccine-effectiveness", "project_name": "opensafely", "minutes_ago": 15},
+        {"identifier": "jr-002", "sha": "def456", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "long-covid-risk-factors", "project_name": "bennett-institute", "minutes_ago": 45},
+        {"identifier": "jr-003", "sha": "ghi789", "status": JobStatus.RUNNING,
+         "workspace_name": "antibiotic-prescribing", "project_name": "university-of-oxford", "minutes_ago": 60},
+        {"identifier": "jr-004", "sha": "jkl012", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "diabetes-outcomes", "project_name": "lshtm", "minutes_ago": 120},
+        {"identifier": "jr-005", "sha": "mno345", "status": JobStatus.FAILED,
+         "workspace_name": "mental-health-trends", "project_name": "kings-college-london", "minutes_ago": 180},
+        {"identifier": "jr-006", "sha": "pqr678", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "cardiovascular-risk", "project_name": "imperial-college-london", "minutes_ago": 240},
+        {"identifier": "jr-007", "sha": "stu901", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "respiratory-infections", "project_name": "university-of-bristol", "minutes_ago": 300},
+        {"identifier": "jr-008", "sha": "vwx234", "status": JobStatus.PENDING,
+         "workspace_name": "cancer-screening", "project_name": "university-of-cambridge", "minutes_ago": 360},
+        {"identifier": "jr-009", "sha": "yza567", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "vaccine-safety-monitoring", "project_name": "ukhsa", "minutes_ago": 480},
+        {"identifier": "jr-010", "sha": "bcd890", "status": JobStatus.SUCCEEDED,
+         "workspace_name": "primary-care-workload", "project_name": "nhs-england", "minutes_ago": 720},
     ]
+
+    @classmethod
+    def _get_demo_job_requests(cls) -> List[JobRequest]:
+        """Generate demo job requests with fresh timestamps."""
+        now = datetime.now()
+        return [
+            JobRequest(
+                identifier=t["identifier"],
+                sha=t["sha"],
+                status=t["status"],
+                workspace_name=t["workspace_name"],
+                project_name=t["project_name"],
+                created_at=now - timedelta(minutes=t["minutes_ago"])
+            )
+            for t in cls.DEMO_JOB_TEMPLATES
+        ]
 
     def __init__(
         self,
@@ -428,14 +435,14 @@ class OpenSAFELYJobsClient:
             if self.use_demo_fallback:
                 logger.info("Falling back to demo data for recent jobs")
                 self._using_demo_data = True
-                return self.DEMO_JOB_REQUESTS[:limit]
+                return self._get_demo_job_requests()[:limit]
             raise
         except Exception as e:
             logger.error(f"Failed to get recent job requests: {e}")
             if self.use_demo_fallback:
                 logger.info("Falling back to demo data for recent jobs")
                 self._using_demo_data = True
-                return self.DEMO_JOB_REQUESTS[:limit]
+                return self._get_demo_job_requests()[:limit]
             raise OpenSAFELYParseError(f"Failed to parse recent job requests: {e}")
 
     @property
