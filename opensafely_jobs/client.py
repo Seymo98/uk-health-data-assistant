@@ -73,11 +73,63 @@ class OpenSAFELYJobsClient:
         "databuilder": Backend(name="DataBuilder", slug="databuilder", display_name="DataBuilder"),
     }
 
+    # Demo data based on real OpenSAFELY organizations (used as fallback)
+    DEMO_ORGANIZATIONS = [
+        Organization(name="OpenSAFELY", slug="opensafely", project_count=45),
+        Organization(name="Bennett Institute", slug="bennett-institute", project_count=38),
+        Organization(name="University of Oxford", slug="university-of-oxford", project_count=28),
+        Organization(name="London School of Hygiene & Tropical Medicine", slug="lshtm", project_count=22),
+        Organization(name="University of Bristol", slug="university-of-bristol", project_count=18),
+        Organization(name="King's College London", slug="kings-college-london", project_count=15),
+        Organization(name="University of Cambridge", slug="university-of-cambridge", project_count=14),
+        Organization(name="Imperial College London", slug="imperial-college-london", project_count=12),
+        Organization(name="University of Edinburgh", slug="university-of-edinburgh", project_count=11),
+        Organization(name="University of Manchester", slug="university-of-manchester", project_count=9),
+        Organization(name="NHS England", slug="nhs-england", project_count=8),
+        Organization(name="NIHR", slug="nihr", project_count=7),
+        Organization(name="UK Health Security Agency", slug="ukhsa", project_count=6),
+        Organization(name="University College London", slug="ucl", project_count=5),
+    ]
+
+    DEMO_JOB_REQUESTS = [
+        JobRequest(identifier="jr-001", sha="abc123", status=JobStatus.SUCCEEDED,
+                   workspace_name="covid-vaccine-effectiveness", project_name="opensafely",
+                   created_at=datetime.now() - timedelta(minutes=15)),
+        JobRequest(identifier="jr-002", sha="def456", status=JobStatus.SUCCEEDED,
+                   workspace_name="long-covid-risk-factors", project_name="bennett-institute",
+                   created_at=datetime.now() - timedelta(minutes=45)),
+        JobRequest(identifier="jr-003", sha="ghi789", status=JobStatus.RUNNING,
+                   workspace_name="antibiotic-prescribing", project_name="university-of-oxford",
+                   created_at=datetime.now() - timedelta(hours=1)),
+        JobRequest(identifier="jr-004", sha="jkl012", status=JobStatus.SUCCEEDED,
+                   workspace_name="diabetes-outcomes", project_name="lshtm",
+                   created_at=datetime.now() - timedelta(hours=2)),
+        JobRequest(identifier="jr-005", sha="mno345", status=JobStatus.FAILED,
+                   workspace_name="mental-health-trends", project_name="kings-college-london",
+                   created_at=datetime.now() - timedelta(hours=3)),
+        JobRequest(identifier="jr-006", sha="pqr678", status=JobStatus.SUCCEEDED,
+                   workspace_name="cardiovascular-risk", project_name="imperial-college-london",
+                   created_at=datetime.now() - timedelta(hours=4)),
+        JobRequest(identifier="jr-007", sha="stu901", status=JobStatus.SUCCEEDED,
+                   workspace_name="respiratory-infections", project_name="university-of-bristol",
+                   created_at=datetime.now() - timedelta(hours=5)),
+        JobRequest(identifier="jr-008", sha="vwx234", status=JobStatus.PENDING,
+                   workspace_name="cancer-screening", project_name="university-of-cambridge",
+                   created_at=datetime.now() - timedelta(hours=6)),
+        JobRequest(identifier="jr-009", sha="yza567", status=JobStatus.SUCCEEDED,
+                   workspace_name="vaccine-safety-monitoring", project_name="ukhsa",
+                   created_at=datetime.now() - timedelta(hours=8)),
+        JobRequest(identifier="jr-010", sha="bcd890", status=JobStatus.SUCCEEDED,
+                   workspace_name="primary-care-workload", project_name="nhs-england",
+                   created_at=datetime.now() - timedelta(hours=12)),
+    ]
+
     def __init__(
         self,
         base_url: Optional[str] = None,
         timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = 3,
+        use_demo_fallback: bool = True,
         backoff_factor: float = 0.5,
         session: Optional[requests.Session] = None,
     ):
@@ -88,11 +140,14 @@ class OpenSAFELYJobsClient:
             base_url: Base URL for jobs.opensafely.org
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts for failed requests
+            use_demo_fallback: Use demo data when live API is unreachable
             backoff_factor: Backoff multiplier between retries
             session: Optional custom requests session
         """
         self.base_url = base_url or self.BASE_URL
         self.timeout = timeout
+        self.use_demo_fallback = use_demo_fallback
+        self._using_demo_data = False
 
         self.session = session or requests.Session()
         retry_strategy = Retry(
@@ -237,6 +292,10 @@ class OpenSAFELYJobsClient:
 
         except Exception as e:
             logger.error(f"Failed to get organizations: {e}")
+            if self.use_demo_fallback:
+                logger.info("Falling back to demo data for organizations")
+                self._using_demo_data = True
+                return self.DEMO_ORGANIZATIONS.copy()
             raise OpenSAFELYParseError(f"Failed to parse organizations: {e}")
 
     def get_organization_details(self, slug: str) -> Organization:
@@ -365,11 +424,24 @@ class OpenSAFELYJobsClient:
 
             return job_requests[:limit]
 
-        except OpenSAFELYConnectionError:
+        except OpenSAFELYConnectionError as e:
+            if self.use_demo_fallback:
+                logger.info("Falling back to demo data for recent jobs")
+                self._using_demo_data = True
+                return self.DEMO_JOB_REQUESTS[:limit]
             raise
         except Exception as e:
             logger.error(f"Failed to get recent job requests: {e}")
+            if self.use_demo_fallback:
+                logger.info("Falling back to demo data for recent jobs")
+                self._using_demo_data = True
+                return self.DEMO_JOB_REQUESTS[:limit]
             raise OpenSAFELYParseError(f"Failed to parse recent job requests: {e}")
+
+    @property
+    def is_using_demo_data(self) -> bool:
+        """Check if the client is currently using demo/fallback data."""
+        return self._using_demo_data
 
     def get_project_details(self, project_slug: str) -> Project:
         """
