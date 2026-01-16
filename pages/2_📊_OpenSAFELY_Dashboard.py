@@ -450,7 +450,11 @@ with tab1:
 
     with col4:
         if stats:
-            success_rate = stats.success_rate
+            # Handle both dict (from CSV) and DashboardStats object (from live)
+            if isinstance(stats, dict):
+                success_rate = stats.get("success_rate", 0)
+            else:
+                success_rate = stats.success_rate
             st.metric(
                 label="Success Rate",
                 value=f"{success_rate:.1f}%",
