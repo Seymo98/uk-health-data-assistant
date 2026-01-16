@@ -29,6 +29,13 @@
       "description": "Extract approved research projects from SAIL Databank",
       "input": "none",
       "output": "csv_of_approved_projects"
+    },
+    "opensafely_jobs_dashboard": {
+      "description": "Visualize OpenSAFELY's transparent job execution logs",
+      "input": "none",
+      "output": "interactive_dashboard",
+      "data_source": "jobs.opensafely.org",
+      "features": ["organizations", "projects", "job_requests", "status_tracking", "analytics"]
     }
   },
   "data_sources": [
@@ -51,12 +58,14 @@
     {
       "name": "OpenSAFELY",
       "url": "https://www.opensafely.org/",
+      "jobs_url": "https://jobs.opensafely.org/",
       "type": "in_situ_analysis",
       "coverage": "~60M patients",
-      "systems": ["TPP"],
+      "systems": ["TPP", "EMIS"],
       "access_model": "code_repository",
       "primary_use": "covid_research",
-      "note": "Does not support EMIS or general-purpose research"
+      "transparency": "gold_standard",
+      "note": "Publishes machine-readable logs of every query via jobs.opensafely.org"
     },
     {
       "name": "UK Biobank",
@@ -145,7 +154,9 @@
     "knowledge_base": "system_prompt_v3_structured.txt",
     "data_extraction": "extract_sail_data_use_register.py",
     "requirements": "requirements.txt",
-    "config": ".streamlit/config.toml"
+    "config": ".streamlit/config.toml",
+    "opensafely_dashboard": "pages/2_📊_OpenSAFELY_Dashboard.py",
+    "opensafely_client": "opensafely_jobs/client.py"
   },
   "api_endpoints": {
     "hdr_gateway": {
@@ -156,6 +167,13 @@
     },
     "sail_databank": {
       "register_url": "https://saildatabank.com/data/data-use-register/"
+    },
+    "opensafely_jobs": {
+      "base_url": "https://jobs.opensafely.org",
+      "organisations": "/organisations/",
+      "projects": "/{org_slug}/{project_slug}/",
+      "job_requests": "/api/v2/job-requests/",
+      "jobs": "/api/v2/jobs/"
     }
   },
   "constraints": [
