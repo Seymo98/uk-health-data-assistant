@@ -342,9 +342,11 @@ data_source, last_updated = check_data_source()
 
 if data_source == "csv":
     st.success(f"""
-    **Historical Data Mode**: Showing complete job history from OpenSAFELY.
+    **Historical Data Mode**: Showing complete job history from OpenSAFELY event log.
 
-    **Last Updated:** {last_updated}
+    **Last Updated:** {last_updated} | **Total Jobs:** {load_csv_stats().get('total_jobs', 0):,} | **Success Rate:** {load_csv_stats().get('success_rate', 0):.1f}%
+
+    *Note: The event log shows Projects and Workspaces (organization data requires additional scraping).*
 
     [View live data at jobs.opensafely.org](https://jobs.opensafely.org)
     """)
@@ -427,18 +429,23 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+        # Label depends on data source (CSV shows projects, live shows orgs)
+        label = "Projects" if data_source == "csv" else "Organizations"
+        help_text = "Unique research projects in the event log" if data_source == "csv" else "Number of organizations using OpenSAFELY"
         st.metric(
-            label="Organizations",
+            label=label,
             value=len(organizations),
-            help="Number of organizations using OpenSAFELY"
+            help=help_text
         )
 
     with col2:
-        total_projects = sum(o.project_count for o in organizations)
+        total_workspaces = sum(o.project_count for o in organizations)
+        label = "Workspaces" if data_source == "csv" else "Total Projects"
+        help_text = "Total workspaces across all projects" if data_source == "csv" else "Total research projects across all organizations"
         st.metric(
-            label="Total Projects",
-            value=total_projects,
-            help="Total research projects across all organizations"
+            label=label,
+            value=total_workspaces,
+            help=help_text
         )
 
     with col3:

@@ -710,6 +710,28 @@ class OpenSAFELYDataLoader:
             logger.error(f"Failed to load metadata: {e}")
             return {"last_updated": None, "last_updated_formatted": "Error loading"}
 
+    def _parse_date_from_text(self, text: str) -> Optional[datetime]:
+        """Parse datetime from the messy text format in the CSV."""
+        if not text:
+            return None
+
+        # Try to extract date pattern like "15 January 2026 16:23:16"
+        match = re.search(r'(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{2}):(\d{2}):(\d{2})', text)
+        if match:
+            try:
+                day, month_name, year, hour, minute, second = match.groups()
+                # Parse month name
+                months = {
+                    'january': 1, 'february': 2, 'march': 3, 'april': 4,
+                    'may': 5, 'june': 6, 'july': 7, 'august': 8,
+                    'september': 9, 'october': 10, 'november': 11, 'december': 12
+                }
+                month = months.get(month_name.lower(), 1)
+                return datetime(int(year), month, int(day), int(hour), int(minute), int(second))
+            except (ValueError, KeyError):
+                pass
+        return None
+
     def load_jobs(self) -> List[Dict[str, Any]]:
         """Load all jobs from the CSV file."""
         if self._jobs_cache is not None:
@@ -751,13 +773,17 @@ class OpenSAFELYDataLoader:
 
         # Sort by date (most recent first)
         def parse_date(job):
+            # Try ISO field first, then fall back to text parsing
             iso = job.get("started_at_iso", "")
             if iso:
                 try:
                     return datetime.fromisoformat(iso.replace("Z", "+00:00"))
                 except:
                     pass
-            return datetime.min
+            # Fall back to parsing the text field
+            text = job.get("started_at", "")
+            parsed = self._parse_date_from_text(text)
+            return parsed if parsed else datetime.min
 
         sorted_jobs = sorted(jobs, key=parse_date, reverse=True)
 
@@ -767,6 +793,7 @@ class OpenSAFELYDataLoader:
         job_requests = []
         for job in sorted_jobs:
             status = JobStatus.from_string(job.get("status", "unknown"))
+            # Parse date from ISO or text
             created_at = None
             iso = job.get("started_at_iso", "")
             if iso:
@@ -774,6 +801,8 @@ class OpenSAFELYDataLoader:
                     created_at = datetime.fromisoformat(iso.replace("Z", "+00:00"))
                 except:
                     pass
+            if not created_at:
+                created_at = self._parse_date_from_text(job.get("started_at", ""))
 
             jr = JobRequest(
                 identifier=job.get("job_request_id", ""),
@@ -791,30 +820,36 @@ class OpenSAFELYDataLoader:
 
     def get_organizations_from_jobs(self) -> List[Organization]:
         """
-        Extract unique organizations from job data.
+        Extract unique projects from job data.
+
+        Note: The event log doesn't contain organization data, only project names.
+        This returns projects as "organizations" for compatibility with the dashboard.
 
         Returns:
-            List of Organization objects with project counts
+            List of Organization objects (actually projects) with workspace counts
         """
         jobs = self.load_jobs()
 
-        # Count projects per organization
-        org_projects: Dict[str, set] = {}
+        # Count workspaces per project (the "organization" field contains project slugs)
+        project_workspaces: Dict[str, set] = {}
         for job in jobs:
-            org = job.get("organization", "")
-            project = job.get("project", "")
-            if org:
-                if org not in org_projects:
-                    org_projects[org] = set()
-                if project:
-                    org_projects[org].add(project)
+            project_slug = job.get("organization", "")  # This is actually project slug
+            workspace = job.get("workspace", "")
+            if project_slug:
+                if project_slug not in project_workspaces:
+                    project_workspaces[project_slug] = set()
+                if workspace:
+                    project_workspaces[project_slug].add(workspace)
 
+        # Return as "organizations" for dashboard compatibility
         organizations = []
-        for org_name, projects in sorted(org_projects.items(), key=lambda x: len(x[1]), reverse=True):
+        for project_slug, workspaces in sorted(project_workspaces.items(), key=lambda x: len(x[1]), reverse=True):
+            # Use the display name from the project field if we can find it
+            display_name = project_slug.replace("-", " ").title()
             organizations.append(Organization(
-                name=org_name.replace("-", " ").title(),
-                slug=org_name,
-                project_count=len(projects),
+                name=display_name,
+                slug=project_slug,
+                project_count=len(workspaces),  # Actually workspace count
             ))
 
         return organizations
@@ -863,14 +898,18 @@ class OpenSAFELYDataLoader:
         # Jobs by date (last 30 days worth)
         jobs_by_date = {}
         for job in jobs:
+            dt = None
             iso = job.get("started_at_iso", "")
             if iso:
                 try:
                     dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
-                    date_key = dt.strftime("%Y-%m-%d")
-                    jobs_by_date[date_key] = jobs_by_date.get(date_key, 0) + 1
                 except:
                     pass
+            if not dt:
+                dt = self._parse_date_from_text(job.get("started_at", ""))
+            if dt:
+                date_key = dt.strftime("%Y-%m-%d")
+                jobs_by_date[date_key] = jobs_by_date.get(date_key, 0) + 1
 
         # Calculate success rate
         succeeded = status_counts.get("succeeded", 0)
