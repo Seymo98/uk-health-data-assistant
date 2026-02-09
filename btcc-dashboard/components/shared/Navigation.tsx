@@ -7,6 +7,7 @@ const navItems = [
   { href: '/', label: 'Dashboard' },
   { href: '/input', label: 'Data Entry' },
   { href: '/history', label: 'History' },
+  { href: '/settings', label: 'Settings' },
 ];
 
 export default function Navigation() {

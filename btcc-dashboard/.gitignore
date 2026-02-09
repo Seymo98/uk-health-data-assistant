@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# FreeAgent tokens (contain secrets)
+data/freeagent-tokens.json
+
 # vercel
 .vercel
 
