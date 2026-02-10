@@ -50,37 +50,72 @@ export function getMonthSummaries(budget: BudgetData, actuals: ActualsData): Mon
   });
 }
 
+// How many months have elapsed in the financial year (Oct=1 in Oct, up to 12 in Sep)
+export function getElapsedMonthCount(): number {
+  const now = new Date();
+  const month = now.getMonth(); // 0=Jan
+  // Oct(9)->1, Nov(10)->2, Dec(11)->3, Jan(0)->4, Feb(1)->5, ..., Sep(8)->12
+  return month >= 9 ? month - 8 : month + 4;
+}
+
 export function getYTDSummary(budget: BudgetData, actuals: ActualsData): YTDSummary {
   const summaries = getMonthSummaries(budget, actuals);
+  const monthsElapsed = getElapsedMonthCount();
   const reported = summaries.filter(s => s.hasActual);
   const monthsReported = reported.length;
 
+  // Budget YTD always based on elapsed calendar months
   let ytdBudgetRev = 0;
-  let ytdActualRev = 0;
   let ytdBudgetCost = 0;
-  let ytdActualCost = 0;
+  for (let i = 0; i < monthsElapsed && i < 12; i++) {
+    ytdBudgetRev += summaries[i].budgetRev;
+    ytdBudgetCost += summaries[i].budgetCost;
+  }
 
-  for (const s of reported) {
-    ytdBudgetRev += s.budgetRev;
-    ytdActualRev += s.actualRev ?? 0;
-    ytdBudgetCost += s.budgetCost;
-    ytdActualCost += s.actualCost ?? 0;
+  // Actuals YTD: null if no months reported yet
+  let ytdActualRev: number | null = null;
+  let ytdActualCost: number | null = null;
+  if (monthsReported > 0) {
+    ytdActualRev = 0;
+    ytdActualCost = 0;
+    for (const s of reported) {
+      ytdActualRev += s.actualRev ?? 0;
+      ytdActualCost += s.actualCost ?? 0;
+    }
   }
 
   const fullYearBudgetNet = sumCategoryTotal(budget.revenue) - sumCategoryTotal(budget.costs);
-  const ytdVariance = (ytdActualRev - ytdActualCost) - (ytdBudgetRev - ytdBudgetCost);
-  const projectedYearEnd = budget.openingBalance + fullYearBudgetNet + ytdVariance;
+
+  // Projected year-end: if actuals exist, adjust for variance vs budget
+  let projectedYearEnd: number;
+  if (ytdActualRev !== null && ytdActualCost !== null) {
+    let reportedBudgetRev = 0;
+    let reportedBudgetCost = 0;
+    for (const s of reported) {
+      reportedBudgetRev += s.budgetRev;
+      reportedBudgetCost += s.budgetCost;
+    }
+    const ytdVariance = (ytdActualRev - ytdActualCost) - (reportedBudgetRev - reportedBudgetCost);
+    projectedYearEnd = budget.openingBalance + fullYearBudgetNet + ytdVariance;
+  } else {
+    projectedYearEnd = budget.openingBalance + fullYearBudgetNet;
+  }
+
+  const ytdBudgetNet = ytdBudgetRev - ytdBudgetCost;
+  const ytdActualNet = ytdActualRev !== null && ytdActualCost !== null
+    ? ytdActualRev - ytdActualCost : null;
 
   return {
+    monthsElapsed,
     monthsReported,
     ytdBudgetRev,
     ytdActualRev,
     ytdBudgetCost,
     ytdActualCost,
-    ytdVarianceRev: ytdActualRev - ytdBudgetRev,
-    ytdVarianceCost: ytdActualCost - ytdBudgetCost,
-    ytdBudgetNet: ytdBudgetRev - ytdBudgetCost,
-    ytdActualNet: ytdActualRev - ytdActualCost,
+    ytdVarianceRev: ytdActualRev !== null ? ytdActualRev - ytdBudgetRev : null,
+    ytdVarianceCost: ytdActualCost !== null ? ytdActualCost - ytdBudgetCost : null,
+    ytdBudgetNet,
+    ytdActualNet,
     projectedYearEnd,
   };
 }
@@ -107,26 +142,40 @@ export function getCategoryBreakdown(
   budget: BudgetData,
   actuals: ActualsData,
   type: 'revenue' | 'costs'
-): { category: string; annual: number; ytdBudget: number; ytdActual: number; variance: number; variancePct: number }[] {
+): { category: string; annual: number; ytdBudget: number; ytdActual: number | null; variance: number | null; variancePct: number | null }[] {
   const budgetData = budget[type];
   const actualsData = actuals[type];
   const summaries = getMonthSummaries(budget, actuals);
+  const monthsElapsed = getElapsedMonthCount();
   const reportedMonths = summaries.filter(s => s.hasActual).map(s => s.monthIndex);
+  const hasAnyActuals = reportedMonths.length > 0;
 
   return Object.keys(budgetData).map(category => {
     const annual = sumCategoryAnnual(budgetData, category);
-    let ytdBudget = 0;
-    let ytdActual = 0;
 
-    for (const mi of reportedMonths) {
-      ytdBudget += budgetData[category]?.[mi] ?? 0;
-      ytdActual += actualsData[category]?.[mi] ?? 0;
+    // Budget YTD based on elapsed months
+    let ytdBudget = 0;
+    for (let i = 0; i < monthsElapsed && i < 12; i++) {
+      ytdBudget += budgetData[category]?.[i] ?? 0;
     }
 
-    const variance = type === 'revenue'
-      ? ytdActual - ytdBudget
-      : ytdBudget - ytdActual;
-    const variancePct = ytdBudget !== 0 ? (variance / ytdBudget) * 100 : 0;
+    // Actual YTD only if actuals have been entered
+    let ytdActual: number | null = null;
+    if (hasAnyActuals) {
+      ytdActual = 0;
+      for (const mi of reportedMonths) {
+        ytdActual += actualsData[category]?.[mi] ?? 0;
+      }
+    }
+
+    let variance: number | null = null;
+    let variancePct: number | null = null;
+    if (ytdActual !== null) {
+      variance = type === 'revenue'
+        ? ytdActual - ytdBudget
+        : ytdBudget - ytdActual;
+      variancePct = ytdBudget !== 0 ? (variance / ytdBudget) * 100 : 0;
+    }
 
     return { category, annual, ytdBudget, ytdActual, variance, variancePct };
   });
@@ -142,7 +191,7 @@ export function generateVarianceAlerts(budget: BudgetData, actuals: ActualsData)
   // Check revenue categories below budget
   const revBreakdown = getCategoryBreakdown(budget, actuals, 'revenue');
   for (const item of revBreakdown) {
-    if (item.ytdBudget > 0 && item.variancePct < -15) {
+    if (item.ytdBudget > 0 && item.variancePct !== null && item.variancePct < -15) {
       alerts.push({
         id: `rev-${item.category}`,
         type: item.variancePct < -25 ? 'critical' : 'warning',
@@ -155,7 +204,7 @@ export function generateVarianceAlerts(budget: BudgetData, actuals: ActualsData)
   // Check cost categories above budget
   const costBreakdown = getCategoryBreakdown(budget, actuals, 'costs');
   for (const item of costBreakdown) {
-    if (item.ytdBudget > 0 && item.variancePct < -15) {
+    if (item.ytdBudget > 0 && item.variancePct !== null && item.variancePct < -15) {
       alerts.push({
         id: `cost-${item.category}`,
         type: item.variancePct < -25 ? 'critical' : 'warning',

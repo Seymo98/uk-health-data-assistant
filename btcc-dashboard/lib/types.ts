@@ -28,15 +28,16 @@ export interface MonthSummary {
 }
 
 export interface YTDSummary {
+  monthsElapsed: number;
   monthsReported: number;
   ytdBudgetRev: number;
-  ytdActualRev: number;
+  ytdActualRev: number | null;
   ytdBudgetCost: number;
-  ytdActualCost: number;
-  ytdVarianceRev: number;
-  ytdVarianceCost: number;
+  ytdActualCost: number | null;
+  ytdVarianceRev: number | null;
+  ytdVarianceCost: number | null;
   ytdBudgetNet: number;
-  ytdActualNet: number;
+  ytdActualNet: number | null;
   projectedYearEnd: number;
 }
 
