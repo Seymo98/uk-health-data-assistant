@@ -7,6 +7,7 @@ const TOKEN_FILE = path.join(process.cwd(), 'data', 'freeagent-tokens.json');
 export interface StoredTokens extends FreeAgentTokens {
   company_name?: string;
   connected_at?: string;
+  bank_account_url?: string;
 }
 
 export async function getStoredTokens(): Promise<StoredTokens | null> {
@@ -51,6 +52,7 @@ export async function getValidAccessToken(): Promise<string | null> {
       ...refreshed,
       company_name: tokens.company_name,
       connected_at: tokens.connected_at,
+      bank_account_url: tokens.bank_account_url,
     });
     return refreshed.access_token;
   } catch (err) {

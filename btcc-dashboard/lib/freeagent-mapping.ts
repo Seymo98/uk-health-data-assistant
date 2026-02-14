@@ -1,5 +1,5 @@
-import { ActualsData, MonthlyData } from './types';
-import { getProfitAndLoss, getBankTransactions } from './freeagent';
+import { ActualsData } from './types';
+import { getTrialBalance, getCategories, FreeAgentCategory } from './freeagent';
 
 // Financial year Oct 2025 to Sep 2026
 // Month index 0 = Oct 2025, index 11 = Sep 2026
@@ -18,9 +18,8 @@ const MONTH_RANGES: { from: string; to: string }[] = [
   { from: '2026-09-01', to: '2026-09-30' },
 ];
 
-// Configurable mapping from FreeAgent P&L category names to BTCC dashboard categories.
-// Users can customise this to match their FreeAgent chart of accounts.
-// FreeAgent keys are case-insensitive substrings matched against the P&L category names.
+// Configurable mapping from FreeAgent category names to BTCC dashboard categories.
+// FreeAgent keys are case-insensitive substrings matched against category descriptions.
 export interface CategoryMapping {
   freeagentPattern: string;
   dashboardCategory: string;
@@ -80,6 +79,21 @@ function matchCategory(
   return null;
 }
 
+// Determine if a FreeAgent category group is income
+function isIncomeGroup(groupDescription: string): boolean {
+  const lower = groupDescription.toLowerCase();
+  return lower.includes('income') || lower.includes('revenue') || lower.includes('sales');
+}
+
+// Build URL-to-category lookup map from the /categories endpoint
+function buildCategoryMap(categories: FreeAgentCategory[]): Map<string, FreeAgentCategory> {
+  const map = new Map<string, FreeAgentCategory>();
+  for (const cat of categories) {
+    map.set(cat.url, cat);
+  }
+  return map;
+}
+
 // Empty actuals template
 function emptyActuals(): ActualsData {
   const emptyRow = (): (number | null)[] => Array(12).fill(null);
@@ -113,7 +127,9 @@ function emptyActuals(): ActualsData {
   };
 }
 
-// Sync actuals from FreeAgent P&L data for each month
+// Sync actuals from FreeAgent Trial Balance for each month.
+// Uses the Trial Balance endpoint (per-category breakdown) instead of P&L Summary
+// (which only returns aggregate totals).
 export async function syncFromFreeAgent(
   accessToken: string,
   mappings: CategoryMapping[] = DEFAULT_CATEGORY_MAPPINGS
@@ -121,61 +137,107 @@ export async function syncFromFreeAgent(
   const actuals = emptyActuals();
   const today = new Date();
 
+  // Fetch all categories once — builds URL → { description, group_description } map
+  const categories = await getCategories(accessToken);
+  const categoryMap = buildCategoryMap(categories);
+
   for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
     const range = MONTH_RANGES[monthIdx];
-    const monthEnd = new Date(range.to);
-
-    // Only fetch months that have started (don't query future months)
     const monthStart = new Date(range.from);
+
+    // Only fetch months that have started
     if (monthStart > today) continue;
 
     try {
-      const pnlData = await getProfitAndLoss(accessToken, range.from, range.to);
+      const tbData = await getTrialBalance(accessToken, range.from, range.to);
 
-      // FreeAgent P&L response structure varies, but typically has
-      // profit_and_loss.income and profit_and_loss.expenditure sections
-      const pnl = pnlData.profit_and_loss as Record<string, unknown> | undefined;
-      if (!pnl) continue;
+      // Parse trial balance response — handle both array and nested structures
+      const summary = tbData.trial_balance_summary;
+      let entries: Array<Record<string, unknown>> = [];
 
-      // Process income categories
-      const incomeCategories = extractCategories(pnl, 'income');
-      for (const [name, amount] of Object.entries(incomeCategories)) {
-        const match = matchCategory(name, mappings);
-        if (match && match.type === 'revenue' && actuals.revenue[match.dashboardCategory]) {
-          actuals.revenue[match.dashboardCategory][monthIdx] =
-            (actuals.revenue[match.dashboardCategory][monthIdx] ?? 0) + amount;
-        } else if (!match) {
-          // Unmapped revenue goes to Other Revenue
-          actuals.revenue['Other Revenue'][monthIdx] =
-            (actuals.revenue['Other Revenue'][monthIdx] ?? 0) + amount;
+      if (Array.isArray(summary)) {
+        entries = summary;
+      } else if (summary && typeof summary === 'object') {
+        const obj = summary as Record<string, unknown>;
+        if (Array.isArray(obj.categories)) {
+          entries = obj.categories as Array<Record<string, unknown>>;
+        } else if (Array.isArray(obj.trial_balance_items)) {
+          entries = obj.trial_balance_items as Array<Record<string, unknown>>;
         }
       }
 
-      // Process expenditure categories
-      const costCategories = extractCategories(pnl, 'expenditure');
-      for (const [name, amount] of Object.entries(costCategories)) {
+      for (const entry of entries) {
+        // Resolve category name: use URL lookup first, fall back to direct name field
+        const categoryUrl = (entry.category as string) || '';
+        const catInfo = categoryMap.get(categoryUrl);
+        const name = catInfo?.description || (entry.name as string) || (entry.description as string) || '';
+
+        if (!name) continue;
+
+        // Get the amounts for this period
+        // Handle both flat (debit/credit at top level) and nested (activity.debit/credit)
+        let debit: number;
+        let credit: number;
+
+        const activity = entry.activity as Record<string, string> | undefined;
+        if (activity) {
+          debit = parseFloat(activity.debit || '0');
+          credit = parseFloat(activity.credit || '0');
+        } else {
+          debit = parseFloat(String(entry.debit || '0'));
+          credit = parseFloat(String(entry.credit || '0'));
+        }
+
+        if (isNaN(debit)) debit = 0;
+        if (isNaN(credit)) credit = 0;
+
+        // Skip entries with no activity
+        if (debit === 0 && credit === 0) continue;
+
+        // Try to match against our category mappings
         const match = matchCategory(name, mappings);
-        if (match && match.type === 'costs' && actuals.costs[match.dashboardCategory]) {
-          actuals.costs[match.dashboardCategory][monthIdx] =
-            (actuals.costs[match.dashboardCategory][monthIdx] ?? 0) + Math.abs(amount);
-        } else if (!match) {
-          // Unmapped costs go to Other Costs
-          actuals.costs['Other Costs'][monthIdx] =
-            (actuals.costs['Other Costs'][monthIdx] ?? 0) + Math.abs(amount);
+
+        if (match) {
+          if (match.type === 'revenue') {
+            // Income: credit side represents revenue
+            const amount = Math.abs(credit - debit);
+            if (amount > 0) {
+              actuals.revenue[match.dashboardCategory][monthIdx] =
+                (actuals.revenue[match.dashboardCategory][monthIdx] ?? 0) + amount;
+            }
+          } else {
+            // Costs: debit side represents expenses
+            const amount = Math.abs(debit - credit);
+            if (amount > 0) {
+              actuals.costs[match.dashboardCategory][monthIdx] =
+                (actuals.costs[match.dashboardCategory][monthIdx] ?? 0) + amount;
+            }
+          }
+        } else if (catInfo) {
+          // Unmatched category: use group_description to determine income vs expense
+          if (isIncomeGroup(catInfo.group_description)) {
+            const amount = Math.abs(credit - debit);
+            if (amount > 0) {
+              actuals.revenue['Other Revenue'][monthIdx] =
+                (actuals.revenue['Other Revenue'][monthIdx] ?? 0) + amount;
+            }
+          } else {
+            const amount = Math.abs(debit - credit);
+            if (amount > 0) {
+              actuals.costs['Other Costs'][monthIdx] =
+                (actuals.costs['Other Costs'][monthIdx] ?? 0) + amount;
+            }
+          }
         }
       }
-
-      // If the month hasn't ended yet, still count it as having data
-      // (partial month is better than nothing)
-
     } catch (err) {
-      console.error(`Failed to fetch P&L for month ${monthIdx} (${range.from}):`, err);
+      console.error(`Failed to fetch trial balance for month ${monthIdx} (${range.from}):`, err);
       // Skip this month on error, leave as null
     }
   }
 
-  // Only set months with actual data to non-null; leave future months as null
-  // Check each month — if all categories are still null, leave it
+  // For months that have started but yielded no data, set all categories to 0
+  // (meaning no transactions recorded in FreeAgent for that month yet)
   for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
     const monthStart = new Date(MONTH_RANGES[monthIdx].from);
     if (monthStart > today) continue;
@@ -183,9 +245,7 @@ export async function syncFromFreeAgent(
     const hasRevData = Object.values(actuals.revenue).some(arr => arr[monthIdx] !== null);
     const hasCostData = Object.values(actuals.costs).some(arr => arr[monthIdx] !== null);
 
-    // If the month has started but we got no data at all, set all to 0
-    // (meaning the treasurer has no transactions for that month yet)
-    if (!hasRevData && !hasCostData && monthStart <= today) {
+    if (!hasRevData && !hasCostData) {
       Object.keys(actuals.revenue).forEach(cat => {
         actuals.revenue[cat][monthIdx] = 0;
       });
@@ -197,80 +257,4 @@ export async function syncFromFreeAgent(
 
   actuals.lastUpdated = new Date().toISOString();
   return actuals;
-}
-
-// Extract category names and amounts from a P&L section
-function extractCategories(
-  pnl: Record<string, unknown>,
-  section: 'income' | 'expenditure'
-): Record<string, number> {
-  const result: Record<string, number> = {};
-
-  // FreeAgent P&L structure can be nested. Common patterns:
-  // pnl.income_categories, pnl.expenditure_categories (array of {name, total})
-  // or pnl[section] as array
-
-  // Try different known structures
-  const sectionData =
-    pnl[`${section}_categories`] ||
-    pnl[section] ||
-    pnl[`${section}_summary`];
-
-  if (Array.isArray(sectionData)) {
-    for (const item of sectionData) {
-      const entry = item as Record<string, unknown>;
-      const name = (entry.name || entry.description || entry.category || '') as string;
-      const total = parseFloat(String(entry.total || entry.amount || entry.value || '0'));
-      if (name && !isNaN(total)) {
-        result[name] = (result[name] || 0) + total;
-      }
-
-      // Handle sub-categories if present
-      const subCategories = entry.sub_categories || entry.children;
-      if (Array.isArray(subCategories)) {
-        for (const sub of subCategories) {
-          const subEntry = sub as Record<string, unknown>;
-          const subName = (subEntry.name || subEntry.description || '') as string;
-          const subTotal = parseFloat(String(subEntry.total || subEntry.amount || '0'));
-          if (subName && !isNaN(subTotal)) {
-            result[subName] = (result[subName] || 0) + subTotal;
-          }
-        }
-      }
-    }
-  } else if (typeof sectionData === 'object' && sectionData !== null) {
-    // Object format: { "Category Name": amount }
-    for (const [name, value] of Object.entries(sectionData as Record<string, unknown>)) {
-      const amount = parseFloat(String(value));
-      if (!isNaN(amount)) {
-        result[name] = amount;
-      }
-    }
-  }
-
-  return result;
-}
-
-// Get bank balance from FreeAgent
-export async function getBankBalance(
-  accessToken: string,
-  bankAccountUrl: string
-): Promise<{ currentBalance: number; transactions: { date: string; amount: number; description: string }[] }> {
-  const transactions = await getBankTransactions(
-    accessToken,
-    bankAccountUrl,
-    '2025-10-01',
-    new Date().toISOString().split('T')[0]
-  );
-
-  const currentBalance = transactions.reduce((bal, t) => bal + parseFloat(t.amount), 0);
-
-  return {
-    currentBalance,
-    transactions: transactions.map(t => ({
-      date: t.dated_on,
-      amount: parseFloat(t.amount),
-      description: t.description,
-    })),
-  };
 }

@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import FreeAgentConnection from '@/components/Settings/FreeAgentConnection';
+import BankAccountSelector from '@/components/Settings/BankAccountSelector';
 import CategoryMappingEditor from '@/components/Settings/CategoryMappingEditor';
 
 function SettingsContent() {
@@ -34,6 +35,7 @@ function SettingsContent() {
       )}
 
       <FreeAgentConnection />
+      <BankAccountSelector />
       <CategoryMappingEditor />
     </div>
   );

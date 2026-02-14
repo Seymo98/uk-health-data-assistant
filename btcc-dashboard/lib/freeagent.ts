@@ -182,21 +182,6 @@ export async function getBankTransactions(
   return allTransactions;
 }
 
-export interface ProfitAndLossSummary {
-  [category: string]: string; // category name -> amount as string
-}
-
-export async function getProfitAndLoss(
-  accessToken: string,
-  fromDate: string,
-  toDate: string
-): Promise<Record<string, unknown>> {
-  return freeagentFetch('/accounting/profit_and_loss/summary', accessToken, {
-    from_date: fromDate,
-    to_date: toDate,
-  });
-}
-
 export async function getTrialBalance(
   accessToken: string,
   fromDate: string,
@@ -206,4 +191,81 @@ export async function getTrialBalance(
     from_date: fromDate,
     to_date: toDate,
   });
+}
+
+// Categories endpoint — maps category URLs to names and group info
+export interface FreeAgentCategory {
+  url: string;
+  description: string;
+  nominal_code: string;
+  group_description: string;
+}
+
+export async function getCategories(accessToken: string): Promise<FreeAgentCategory[]> {
+  const data = await freeagentFetch('/categories', accessToken);
+  return (data.categories as FreeAgentCategory[]) || [];
+}
+
+// Outstanding invoices (money owed TO the club)
+export interface FreeAgentInvoice {
+  url: string;
+  contact: string;
+  reference: string;
+  dated_on: string;
+  due_on: string;
+  total_value: string;
+  outstanding_value: string;
+  status: string;
+}
+
+export async function getOutstandingInvoices(accessToken: string): Promise<FreeAgentInvoice[]> {
+  const allInvoices: FreeAgentInvoice[] = [];
+  let page = 1;
+
+  while (true) {
+    const data = await freeagentFetch('/invoices', accessToken, {
+      view: 'outstanding',
+      per_page: '100',
+      page: page.toString(),
+    });
+
+    const invoices = (data.invoices as FreeAgentInvoice[]) || [];
+    allInvoices.push(...invoices);
+    if (invoices.length < 100) break;
+    page++;
+  }
+
+  return allInvoices;
+}
+
+// Outstanding bills (money the club OWES)
+export interface FreeAgentBill {
+  url: string;
+  contact: string;
+  reference: string;
+  dated_on: string;
+  due_on: string;
+  total_value: string;
+  outstanding_value: string;
+  status: string;
+}
+
+export async function getOutstandingBills(accessToken: string): Promise<FreeAgentBill[]> {
+  const allBills: FreeAgentBill[] = [];
+  let page = 1;
+
+  while (true) {
+    const data = await freeagentFetch('/bills', accessToken, {
+      view: 'outstanding',
+      per_page: '100',
+      page: page.toString(),
+    });
+
+    const bills = (data.bills as FreeAgentBill[]) || [];
+    allBills.push(...bills);
+    if (bills.length < 100) break;
+    page++;
+  }
+
+  return allBills;
 }

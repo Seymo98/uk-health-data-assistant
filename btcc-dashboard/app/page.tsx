@@ -9,6 +9,7 @@ import BankBalanceChart from '@/components/Dashboard/BankBalanceChart';
 import NetPositionChart from '@/components/Dashboard/NetPositionChart';
 import BudgetSummaryTable from '@/components/Dashboard/BudgetSummaryTable';
 import VarianceAlerts from '@/components/Dashboard/VarianceAlerts';
+import FreeAgentLiveStrip from '@/components/Dashboard/FreeAgentLiveStrip';
 
 export default function DashboardPage() {
   const [budget, setBudget] = useState<BudgetData | null>(null);
@@ -52,6 +53,8 @@ export default function DashboardPage() {
       </div>
 
       <KPIStrip ytd={ytd} />
+
+      <FreeAgentLiveStrip />
 
       {alerts.length > 0 && <VarianceAlerts alerts={alerts} />}
 
