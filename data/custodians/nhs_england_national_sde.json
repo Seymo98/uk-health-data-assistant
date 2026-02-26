@@ -1,0 +1,126 @@
+{
+  "id": "nhs_england_national_sde",
+  "name": "NHS England National Secure Data Environment",
+  "short_name": "NHS England SDE",
+  "description": "The national-level Secure Data Environment operated by NHS England, providing secure access to linked national health datasets for approved research. Part of the wider SDE network of 12 environments (11 regional + 1 national).",
+  "url": "https://digital.nhs.uk/services/secure-data-environment-service",
+  "entity_type": "data_custodian",
+  "regions": ["England"],
+  "access_model": "tre_only",
+  "population_coverage": "England population",
+  "patient_count": "55M+",
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Hospital outpatient",
+    "A&E attendances",
+    "Primary care (GP records)",
+    "Mortality/death registrations",
+    "Cancer registry",
+    "Mental health records",
+    "Maternity records",
+    "Prescription data",
+    "Community services"
+  ],
+  "key_datasets": [
+    "Hospital Episode Statistics (HES)",
+    "Emergency Care Data Set (ECDS)",
+    "Mental Health Services Data Set (MHSDS)",
+    "Community Services Data Set (CSDS)",
+    "Maternity Services Data Set (MSDS)",
+    "Primary Care Data",
+    "National Cancer Registration Dataset"
+  ],
+  "linkages": [
+    "ONS mortality data",
+    "Cancer registry",
+    "DWP (via DARS)",
+    "Education data (limited)"
+  ],
+  "tre_platform": "NHS England Secure Data Environment",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Industry (pharma/biotech)", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "DARS application",
+      "description": "Submit a Data Access Request Service application via the NHS England portal",
+      "mandatory": true,
+      "url": "https://digital.nhs.uk/services/data-access-request-service-dars"
+    },
+    {
+      "name": "IGAP approval",
+      "description": "Application reviewed by the Independent Group Advising on the Release of Data",
+      "mandatory": true
+    },
+    {
+      "name": "Data sharing agreement",
+      "description": "Formal data sharing agreement between NHS England and the requesting organisation",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Register on DARS portal",
+      "description": "Create an account on the NHS England Data Access Request Service portal",
+      "estimated_weeks": 1,
+      "url": "https://digital.nhs.uk/services/data-access-request-service-dars"
+    },
+    {
+      "order": 2,
+      "name": "Submit DARS application",
+      "description": "Complete and submit the data access application with study protocol, data minimisation justification, and legal basis",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "IGAP review",
+      "description": "Independent review panel assesses the application for governance compliance",
+      "estimated_weeks": 10
+    },
+    {
+      "order": 4,
+      "name": "Data sharing agreement",
+      "description": "Negotiate and sign the formal data sharing agreement",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 5,
+      "name": "SDE provisioning",
+      "description": "TRE workspace set up and data provisioned for the approved project",
+      "estimated_weeks": 3
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "Preparing DARS application, gathering supporting documents"},
+    {"phase": "Review", "min_weeks": 6, "typical_weeks": 10, "max_weeks": 16, "notes": "IGAP review process"},
+    {"phase": "Contracting", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "Data sharing agreement negotiation"},
+    {"phase": "Provisioning", "min_weeks": 1, "typical_weeks": 3, "max_weeks": 6, "notes": "SDE workspace setup and data provisioning"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free for approved researchers",
+    "notes": "No fees for approved research since 2024 policy change. Previously fee-based.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy"]
+  },
+  "strengths": [
+    "Largest linked health dataset in England",
+    "Breadth of national datasets (HES, primary care, mortality, cancer, mental health)",
+    "Free access for approved research",
+    "Part of expanding SDE network with improving infrastructure"
+  ],
+  "limitations": [
+    "Long review times (IGAP can take several months)",
+    "England only - no devolved nation data",
+    "No data extraction - analysis must run within SDE",
+    "SDE platform still maturing - user experience varies"
+  ],
+  "recent_changes": [
+    "SDE network fully operational with 12 environments (2025)",
+    "Data (Use and Access) Act 2025 mandates new information standards",
+    "Free access policy for approved researchers (2024)"
+  ],
+  "related_governance_bodies": ["hra_rec", "cag"],
+  "gateway_search_term": "NHS England",
+  "tags": ["national", "hospital", "primary_care", "sde", "free"],
+  "last_updated": "2026-02"
+}

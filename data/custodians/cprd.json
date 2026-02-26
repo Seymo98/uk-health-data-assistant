@@ -1,0 +1,129 @@
+{
+  "id": "cprd",
+  "name": "Clinical Practice Research Datalink",
+  "short_name": "CPRD",
+  "description": "The Clinical Practice Research Datalink (CPRD) is a real-world research service supporting retrospective and prospective public health and clinical studies. It draws on anonymised primary care data from GP practices across the UK, with linkage to secondary care, disease registries, and mortality data. CPRD Aurum covers EMIS practices (primarily England) and CPRD GOLD covers Vision practices (UK-wide).",
+  "url": "https://cprd.com/",
+  "entity_type": "data_custodian",
+  "regions": ["UK-wide"],
+  "access_model": "data_extract",
+  "population_coverage": "UK GP-registered population (current and historical records)",
+  "patient_count": "60M+",
+  "data_types": [
+    "Primary care (GP records)",
+    "Prescription data",
+    "Hospital episodes (HES/inpatient)",
+    "Mortality/death registrations",
+    "Cancer registry",
+    "Mental health records"
+  ],
+  "key_datasets": [
+    "CPRD Aurum (EMIS practices, primarily England)",
+    "CPRD GOLD (Vision practices, UK-wide)",
+    "Linked Hospital Episode Statistics (HES)",
+    "ONS mortality data",
+    "National Cancer Registration Dataset",
+    "Mental Health Services Data Set (MHSDS)",
+    "CPRD Pregnancy Register"
+  ],
+  "linkages": [
+    "HES (inpatient, outpatient, A&E)",
+    "ONS death registry",
+    "Cancer registry",
+    "MHSDS",
+    "Patient-level Index of Multiple Deprivation",
+    "CPRD Mother-Baby Link"
+  ],
+  "tre_platform": null,
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Industry (pharma/biotech)", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "ISAC protocol approval",
+      "description": "Submit a study protocol to the Independent Scientific Advisory Committee (ISAC) for scientific and governance review",
+      "mandatory": true,
+      "url": "https://cprd.com/how-access-cprd-data"
+    },
+    {
+      "name": "CPRD licence agreement",
+      "description": "Organisation must hold a valid CPRD data licence or enter into a data sharing agreement",
+      "mandatory": true
+    },
+    {
+      "name": "Data specification",
+      "description": "Detailed specification of the data extract required, including study population, variables, and linked datasets",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Prepare ISAC protocol",
+      "description": "Draft the study protocol including research question, study design, data requirements, and data minimisation justification",
+      "estimated_weeks": 3,
+      "url": "https://cprd.com/how-access-cprd-data"
+    },
+    {
+      "order": 2,
+      "name": "Submit ISAC application",
+      "description": "Submit the protocol to ISAC for independent scientific and governance review",
+      "estimated_weeks": 1,
+      "governance_body_id": "isac_cprd"
+    },
+    {
+      "order": 3,
+      "name": "ISAC review",
+      "description": "ISAC reviews the protocol for scientific merit, feasibility, and proportionality of data request",
+      "estimated_weeks": 6,
+      "governance_body_id": "isac_cprd"
+    },
+    {
+      "order": 4,
+      "name": "Data licence and costing",
+      "description": "Agree data licence terms and costs with CPRD",
+      "estimated_weeks": 2
+    },
+    {
+      "order": 5,
+      "name": "Data extraction and provision",
+      "description": "CPRD prepares and delivers the approved data extract to the research team",
+      "estimated_weeks": 8
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Preparing ISAC protocol and supporting documentation"},
+    {"phase": "Review", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 8, "notes": "ISAC scientific and governance review"},
+    {"phase": "Contracting", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "Data licence agreement and costing"},
+    {"phase": "Provisioning", "min_weeks": 4, "typical_weeks": 8, "max_weeks": 12, "notes": "Data extraction, quality checks, and delivery"}
+  ],
+  "costs": {
+    "application_fee": "Included in data access fee",
+    "annual_access_fee": null,
+    "per_dataset_fee": "Varies by study scope",
+    "notes": "Academic studies typically GBP 2,000-10,000. Industry studies typically GBP 10,000-50,000+. Costs depend on dataset scope, linkages required, and study complexity.",
+    "free_for": []
+  },
+  "strengths": [
+    "Gold-standard primary care data with long patient histories",
+    "Data extraction available - researchers can work with data in their own environments",
+    "Excellent linkage to secondary care (HES), mortality, cancer, and mental health datasets",
+    "International researchers can access data",
+    "60M+ patient records (current and historical) across UK",
+    "Well-established with decades of research use and published validation studies"
+  ],
+  "limitations": [
+    "ISAC review can be slow, especially if revisions required",
+    "Costs are significant for industry-funded studies",
+    "Transitioning from GOLD (Vision) to Aurum (EMIS) - GOLD dataset shrinking",
+    "TRE access not yet available (planned for future)",
+    "Primary care focus - secondary care via linkage only"
+  ],
+  "recent_changes": [
+    "CPRD Aurum expanding as EMIS coverage grows",
+    "CPRD GOLD declining as practices migrate from Vision to EMIS",
+    "TRE capability in development to complement data extract model"
+  ],
+  "related_governance_bodies": ["isac_cprd", "hra_rec"],
+  "gateway_search_term": "CPRD",
+  "tags": ["primary_care", "data_extract", "linkage", "industry", "international"],
+  "last_updated": "2026-02"
+}

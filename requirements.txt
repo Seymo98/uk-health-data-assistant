@@ -4,3 +4,4 @@ requests
 pandas
 beautifulsoup4
 lxml
+plotly>=5.0.0

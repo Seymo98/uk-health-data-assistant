@@ -1,0 +1,116 @@
+{
+  "id": "edris",
+  "name": "electronic Data Research and Innovation Service (eDRIS)",
+  "short_name": "eDRIS",
+  "description": "The electronic Data Research and Innovation Service (eDRIS) is operated by Public Health Scotland and provides access to Scottish health data for research, including hospital episodes, primary care, cancer registrations, prescribing, mortality, and mental health datasets. eDRIS supports researchers through the application process and provides data within the Scottish National Safe Haven.",
+  "url": "https://publichealthscotland.scot/services/data-research-and-innovation/electronic-data-research-and-innovation-service-edris/",
+  "entity_type": "data_custodian",
+  "regions": ["Scotland"],
+  "access_model": "tre_only",
+  "population_coverage": "Scottish population",
+  "patient_count": "5.5M",
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Primary care (GP records)",
+    "Cancer registry",
+    "Mortality/death registrations",
+    "Prescription data",
+    "Mental health records"
+  ],
+  "key_datasets": [
+    "Scottish Morbidity Records (SMR01 - inpatient, SMR00 - outpatient, SMR04 - mental health)",
+    "Scottish Primary Care Information Resource (SPIRE)",
+    "Scottish Cancer Registry",
+    "National Records of Scotland deaths",
+    "Prescribing Information System (PIS)",
+    "Mental Health Inpatient and Day Case Dataset (SMR04)",
+    "Scottish Birth Record (SBR)"
+  ],
+  "linkages": [
+    "Community Health Index (CHI) for linkage across Scottish health datasets",
+    "National Records of Scotland (births, deaths)",
+    "Scottish Cancer Registry",
+    "Prescribing data"
+  ],
+  "tre_platform": "Scottish National Safe Haven",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "PBPP approval",
+      "description": "Application reviewed by the Public Benefit and Privacy Panel (Tier 1 or Tier 2 depending on complexity)",
+      "mandatory": true,
+      "url": "https://www.informationgovernance.scot.nhs.uk/pbpphsc/"
+    },
+    {
+      "name": "PAC approval",
+      "description": "Privacy Advisory Committee review for studies accessing Public Health Scotland datasets",
+      "mandatory": true
+    },
+    {
+      "name": "Safe Haven access",
+      "description": "All data access via the Scottish National Safe Haven secure environment",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "eDRIS enquiry and feasibility",
+      "description": "Contact eDRIS to discuss research requirements and data availability within Public Health Scotland holdings",
+      "estimated_weeks": 4,
+      "url": "https://publichealthscotland.scot/services/data-research-and-innovation/electronic-data-research-and-innovation-service-edris/"
+    },
+    {
+      "order": 2,
+      "name": "Submit application",
+      "description": "Complete and submit applications to PBPP and PAC with study protocol, data specification, and legal basis",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "PBPP and PAC review",
+      "description": "Dual review by PBPP (public benefit and privacy) and PAC (privacy advisory). Timeline depends on PBPP tier",
+      "estimated_weeks": 14
+    },
+    {
+      "order": 4,
+      "name": "Data preparation and Safe Haven provisioning",
+      "description": "eDRIS prepares the approved datasets and provisions workspace within the National Safe Haven",
+      "estimated_weeks": 6
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 8, "notes": "eDRIS engagement, feasibility, and application preparation"},
+    {"phase": "Review", "min_weeks": 8, "typical_weeks": 14, "max_weeks": 20, "notes": "PBPP and PAC dual review process"},
+    {"phase": "Provisioning", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 8, "notes": "Data extraction, preparation, and Safe Haven workspace provisioning"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free",
+    "notes": "No fees for approved research. eDRIS is a publicly funded service within Public Health Scotland.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"]
+  },
+  "strengths": [
+    "Comprehensive Scottish health data from Public Health Scotland",
+    "Established National Safe Haven infrastructure",
+    "Dedicated support team for researchers throughout the process",
+    "Strong linkage across Scottish health datasets via CHI number",
+    "Free for approved research"
+  ],
+  "limitations": [
+    "Scotland only - no data from other UK nations",
+    "Potentially longest approval times due to dual PBPP and PAC review",
+    "Complex application process with multiple governance hurdles",
+    "No data extraction - all analysis within Safe Haven"
+  ],
+  "recent_changes": [
+    "Integration with Research Data Scotland coordination framework",
+    "Enhanced Safe Haven platform and analytical tools",
+    "Improved researcher support and application guidance"
+  ],
+  "related_governance_bodies": ["pbpp_tier1", "pbpp_tier2", "hra_rec"],
+  "gateway_search_term": "eDRIS Public Health Scotland",
+  "tags": ["scotland", "public_health", "safe_haven", "free", "health_data"],
+  "last_updated": "2026-02"
+}

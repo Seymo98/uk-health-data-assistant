@@ -1,0 +1,121 @@
+{
+  "id": "research_data_scotland",
+  "name": "Research Data Scotland",
+  "short_name": "RDS",
+  "description": "Research Data Scotland (RDS) is the national coordination and gateway service for accessing linked Scottish public sector data for research. It connects researchers with data from health, social care, education, justice, and other public services across Scotland, facilitating access through the Scottish National Safe Haven.",
+  "url": "https://www.researchdata.scot/",
+  "entity_type": "data_custodian",
+  "regions": ["Scotland"],
+  "access_model": "tre_only",
+  "population_coverage": "Scottish population",
+  "patient_count": "5.5M",
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Primary care (GP records)",
+    "Prescription data",
+    "Mental health records",
+    "Mortality/death registrations",
+    "Social care",
+    "Education data",
+    "Justice data",
+    "Housing data"
+  ],
+  "key_datasets": [
+    "Scottish Morbidity Records (SMR01 - inpatient, SMR00 - outpatient)",
+    "Community Health Index (CHI)",
+    "Prescribing Information System (PIS)",
+    "Scottish Primary Care Information Resource (SPIRE)",
+    "National Records of Scotland (births, deaths, marriages)",
+    "Scottish Cancer Registry",
+    "Mental health datasets",
+    "Education (ScotXed)",
+    "Social care (care home census, home care)"
+  ],
+  "linkages": [
+    "Cross-sector linkage (health, social care, education, justice, housing)",
+    "National Records of Scotland",
+    "Scottish Cancer Registry",
+    "DWP benefits data (via agreement)"
+  ],
+  "tre_platform": "Scottish National Safe Haven",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "PBPP approval",
+      "description": "Application reviewed by the Public Benefit and Privacy Panel. Tier 1 for standard requests, Tier 2 for complex/sensitive data",
+      "mandatory": true,
+      "url": "https://www.informationgovernance.scot.nhs.uk/pbpphsc/"
+    },
+    {
+      "name": "Safe Haven access",
+      "description": "Approved researchers access data only within the Scottish National Safe Haven",
+      "mandatory": true
+    },
+    {
+      "name": "Disclosure control",
+      "description": "All outputs undergo statistical disclosure control review before release from the Safe Haven",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Initial enquiry with RDS",
+      "description": "Contact Research Data Scotland to discuss research question, data availability, and feasibility",
+      "estimated_weeks": 2,
+      "url": "https://www.researchdata.scot/"
+    },
+    {
+      "order": 2,
+      "name": "Prepare and submit PBPP application",
+      "description": "Complete the PBPP application form with study protocol, data requirements, and legal basis",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "PBPP review",
+      "description": "Public Benefit and Privacy Panel reviews the application. Tier 1 for standard, Tier 2 for complex requests",
+      "estimated_weeks": 10
+    },
+    {
+      "order": 4,
+      "name": "Safe Haven provisioning",
+      "description": "Data prepared and workspace provisioned within the Scottish National Safe Haven",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "RDS engagement, feasibility, and application preparation"},
+    {"phase": "Review", "min_weeks": 6, "typical_weeks": 10, "max_weeks": 16, "notes": "PBPP review - Tier 1 faster (~6 weeks), Tier 2 longer (~12 weeks)"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "Data linkage, preparation, and Safe Haven workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free for approved research",
+    "notes": "No fees for approved research. RDS is publicly funded to support research using Scottish public sector data.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"]
+  },
+  "strengths": [
+    "Gateway/coordination role simplifying access to multiple Scottish data sources",
+    "Rich cross-sector linkage spanning health, social care, education, justice, and housing",
+    "Whole Scottish population coverage (5.5M)",
+    "Free access for approved research",
+    "Established Scottish National Safe Haven infrastructure"
+  ],
+  "limitations": [
+    "Scotland only - no data from other UK nations",
+    "PBPP review can be lengthy, especially for Tier 2 applications",
+    "Smaller population than England-based resources",
+    "No data extraction - all analysis within Safe Haven"
+  ],
+  "recent_changes": [
+    "RDS established as the primary coordination body for Scottish data access",
+    "Expanding data partnerships with additional public sector organisations",
+    "Improved Safe Haven platform and researcher experience"
+  ],
+  "related_governance_bodies": ["pbpp_tier1", "pbpp_tier2", "hra_rec"],
+  "gateway_search_term": "Research Data Scotland",
+  "tags": ["scotland", "cross_sector", "linkage", "safe_haven", "free", "population"],
+  "last_updated": "2026-02"
+}

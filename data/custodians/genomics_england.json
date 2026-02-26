@@ -1,0 +1,111 @@
+{
+  "id": "genomics_england",
+  "name": "Genomics England",
+  "short_name": "Genomics England",
+  "description": "Genomics England hosts and provides access to whole genome sequencing data from the 100,000 Genomes Project, covering approximately 85,000 NHS patients with rare diseases and cancer. Provides a secure research environment with linked clinical and genomic data to enable genomic medicine research.",
+  "url": "https://www.genomicsengland.co.uk/",
+  "entity_type": "data_custodian",
+  "regions": ["England"],
+  "access_model": "tre_only",
+  "population_coverage": "NHS patients with rare diseases and cancer (specific cohorts)",
+  "patient_count": "85,000+",
+  "data_types": [
+    "Genomic/genetic data",
+    "Cancer registry",
+    "Rare disease phenotypes"
+  ],
+  "key_datasets": [
+    "100,000 Genomes Project - Rare Disease",
+    "100,000 Genomes Project - Cancer",
+    "Whole genome sequences",
+    "Clinical phenotype data (HPO terms)",
+    "Linked cancer registry data",
+    "Linked Hospital Episode Statistics",
+    "Newborn Genomes Programme (emerging)"
+  ],
+  "linkages": [
+    "NHS clinical records",
+    "Cancer registry",
+    "Hospital Episode Statistics",
+    "National Genomic Research Library"
+  ],
+  "tre_platform": "Genomics England Research Environment (GERE) - Linux Virtual Desktop with HPC cluster (Helix)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Industry (pharma/biotech)", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "GE DAC approval",
+      "description": "Application reviewed by the Genomics England Data Access Committee for scientific merit and governance compliance",
+      "mandatory": true,
+      "url": "https://www.genomicsengland.co.uk/research",
+      "governance_body_id": "dac_genomics"
+    },
+    {
+      "name": "Researcher registration",
+      "description": "All researchers must be registered and approved before accessing the research environment",
+      "mandatory": true
+    },
+    {
+      "name": "GERE access agreement",
+      "description": "Sign the Genomics England data access agreement governing terms of use within the research environment",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Submit research application",
+      "description": "Apply to the Genomics England Data Access Committee with research proposal, data requirements, and team details",
+      "estimated_weeks": 6,
+      "url": "https://www.genomicsengland.co.uk/research",
+      "governance_body_id": "dac_genomics"
+    },
+    {
+      "order": 2,
+      "name": "DAC review",
+      "description": "Data Access Committee reviews application for scientific merit, governance, and alignment with participant consent",
+      "estimated_weeks": 12,
+      "governance_body_id": "dac_genomics"
+    },
+    {
+      "order": 3,
+      "name": "Researcher onboarding",
+      "description": "Approved researchers complete training, agreements, and technical onboarding for the GERE platform",
+      "estimated_weeks": 3
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 8, "notes": "Preparing research application and gathering supporting documentation"},
+    {"phase": "Review", "min_weeks": 8, "typical_weeks": 12, "max_weeks": 16, "notes": "DAC review process - can be lengthy for complex applications"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 3, "max_weeks": 4, "notes": "Researcher onboarding, training, and GERE workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "Free for academic researchers",
+    "annual_access_fee": null,
+    "tre_fee": "Free for academic; industry via partnership fees",
+    "notes": "Academic research is free. Industry access available through Genomics England partnership agreements with associated fees.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy"]
+  },
+  "strengths": [
+    "Unique whole genome sequencing data linked to clinical phenotypes",
+    "Deep clinical linkage for rare disease and cancer cohorts",
+    "Focused rare disease and cancer genomics - unmatched depth in these areas",
+    "High-performance computing (Helix HPC) for genomic analysis",
+    "Growing data resource with Newborn Genomes Programme"
+  ],
+  "limitations": [
+    "Specific populations only (rare disease and cancer patients) - not population-representative",
+    "England only",
+    "Long approval timeline (typically 20+ weeks)",
+    "Requires genomics/bioinformatics expertise to analyse data",
+    "No data extraction - all work within GERE"
+  ],
+  "recent_changes": [
+    "Newborn Genomes Programme launched for genomic screening",
+    "Expanded cancer and rare disease cohorts",
+    "Improved GERE platform with enhanced HPC capabilities"
+  ],
+  "related_governance_bodies": ["dac_genomics", "hra_rec"],
+  "gateway_search_term": "Genomics England",
+  "tags": ["genomics", "rare_disease", "cancer", "tre", "hpc"],
+  "last_updated": "2026-02"
+}

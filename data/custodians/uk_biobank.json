@@ -1,0 +1,130 @@
+{
+  "id": "uk_biobank",
+  "name": "UK Biobank",
+  "short_name": "UK Biobank",
+  "description": "One of the world's largest prospective cohort studies with deep phenotyping of 500,000+ participants aged 40-69 at recruitment. Includes genomics, imaging, biomarkers, and newly linked GP data. All access now via the cloud-based Research Analysis Platform (RAP).",
+  "url": "https://www.ukbiobank.ac.uk/",
+  "entity_type": "data_custodian",
+  "regions": ["UK-wide"],
+  "access_model": "hybrid",
+  "population_coverage": "Volunteer cohort (not population-representative)",
+  "patient_count": "500,000+",
+  "data_types": [
+    "Genomic/genetic data",
+    "Imaging (MRI, CT, X-ray)",
+    "Biomarker/blood samples",
+    "Primary care (GP records)",
+    "Hospital episodes (HES/inpatient)",
+    "Mortality/death registrations",
+    "Cancer registry",
+    "COVID-19 specific",
+    "Patient-reported outcomes"
+  ],
+  "key_datasets": [
+    "Whole genome sequencing (500K)",
+    "Genotyping arrays",
+    "Brain/cardiac/abdominal MRI (100K target)",
+    "DXA body composition",
+    "Retinal imaging",
+    "Primary care GP data (newly linked Feb 2026)",
+    "Hospital Episode Statistics (linked)",
+    "Cancer registry (linked)",
+    "Blood/urine biomarkers (30+ panels)"
+  ],
+  "linkages": [
+    "HES",
+    "ONS death registry",
+    "Cancer registry",
+    "Primary care (GP) records",
+    "COVID test results"
+  ],
+  "tre_platform": "UK Biobank Research Analysis Platform (RAP) on DNAnexus",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Industry (pharma/biotech)", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "Researcher registration",
+      "description": "Register as a bona fide researcher on the UK Biobank Access Management System",
+      "mandatory": true,
+      "url": "https://www.ukbiobank.ac.uk/enable-your-research/register"
+    },
+    {
+      "name": "Research application",
+      "description": "Submit a research application describing the project, data needed, and public benefit",
+      "mandatory": true
+    },
+    {
+      "name": "Material Transfer Agreement",
+      "description": "Institution must sign the MTA governing data use terms",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Register as researcher",
+      "description": "Create account on Access Management System and verify credentials",
+      "estimated_weeks": 1,
+      "url": "https://www.ukbiobank.ac.uk/enable-your-research/register"
+    },
+    {
+      "order": 2,
+      "name": "Submit research application",
+      "description": "Describe research question, data fields needed, analysis plan",
+      "estimated_weeks": 3
+    },
+    {
+      "order": 3,
+      "name": "Access Committee review",
+      "description": "Application reviewed for scientific merit and alignment with participant consent",
+      "estimated_weeks": 6
+    },
+    {
+      "order": 4,
+      "name": "MTA signed",
+      "description": "Institutional Material Transfer Agreement negotiated and signed",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 5,
+      "name": "RAP access provisioned",
+      "description": "Workspace created on the Research Analysis Platform with approved datasets",
+      "estimated_weeks": 2
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 1, "typical_weeks": 3, "max_weeks": 6, "notes": "Registration and application preparation"},
+    {"phase": "Review", "min_weeks": 3, "typical_weeks": 6, "max_weeks": 12, "notes": "Access Committee review"},
+    {"phase": "Contracting", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "MTA negotiation and signing"},
+    {"phase": "Provisioning", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "RAP workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "GBP 3,000 - 9,000",
+    "annual_access_fee": "RAP compute charges apply",
+    "notes": "Fee varies by dataset scope. Industry rates higher. RAP cloud compute charged separately.",
+    "free_for": []
+  },
+  "strengths": [
+    "World-class deep phenotyping (genomics, imaging, biomarkers)",
+    "500K whole genome sequences",
+    "100K imaging participants (MRI, DXA, ECG, retinal)",
+    "Newly linked GP primary care data (Feb 2026)",
+    "Open to international researchers",
+    "Well-established processes and support"
+  ],
+  "limitations": [
+    "Volunteer cohort - not population-representative (healthy volunteer bias)",
+    "Recruitment age 40-69 (no younger/older participants)",
+    "Predominantly White British demographics",
+    "Application fees can be significant",
+    "RAP cloud compute adds ongoing costs"
+  ],
+  "recent_changes": [
+    "GP data linkage enabled (government decision Feb 2026)",
+    "All access now via Research Analysis Platform (RAP) - no more data downloads",
+    "500K whole genome sequencing complete"
+  ],
+  "related_governance_bodies": ["hra_rec"],
+  "gateway_search_term": "UK Biobank",
+  "tags": ["genomics", "imaging", "biomarkers", "cohort", "international"],
+  "last_updated": "2026-02"
+}

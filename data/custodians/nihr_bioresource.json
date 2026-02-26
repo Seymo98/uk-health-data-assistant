@@ -1,0 +1,116 @@
+{
+  "id": "nihr_bioresource",
+  "name": "NIHR BioResource",
+  "short_name": "NIHR BioResource",
+  "description": "The NIHR BioResource is a national research infrastructure of over 200,000 consented volunteers who can be recalled for participation in new studies. It provides genomic data, linked health records, and biomarker data, with the unique capability to re-contact participants for additional data collection, sample provision, or clinical studies.",
+  "url": "https://bioresource.nihr.ac.uk/",
+  "entity_type": "data_custodian",
+  "regions": ["England"],
+  "access_model": "hybrid",
+  "population_coverage": "Consented volunteer cohort (not population-representative)",
+  "patient_count": "200,000+",
+  "data_types": [
+    "Genomic/genetic data",
+    "Biomarker/blood samples",
+    "Primary care (GP records)",
+    "Hospital episodes (HES/inpatient)"
+  ],
+  "key_datasets": [
+    "Whole genome sequencing data",
+    "Genotyping arrays",
+    "Linked primary care (GP) records",
+    "Linked Hospital Episode Statistics",
+    "Blood and tissue biobank samples",
+    "Participant-reported phenotype data",
+    "Disease-specific cohorts (rare diseases, common diseases)"
+  ],
+  "linkages": [
+    "HES (via NHS Digital/NHS England)",
+    "Primary care GP records",
+    "ONS mortality",
+    "Disease-specific clinical registries"
+  ],
+  "tre_platform": "NIHR BioResource data access platform",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Industry (pharma/biotech)", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "Data Access Committee approval",
+      "description": "Application reviewed by the NIHR BioResource Data Access Committee for scientific merit and governance",
+      "mandatory": true,
+      "url": "https://bioresource.nihr.ac.uk/researchers/"
+    },
+    {
+      "name": "Ethics approval",
+      "description": "Appropriate research ethics approval for the proposed study",
+      "mandatory": true
+    },
+    {
+      "name": "Data access agreement",
+      "description": "Formal agreement governing data use, storage, and return/destruction requirements",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Submit research application",
+      "description": "Apply to the NIHR BioResource with research proposal, data/sample requirements, and recall needs",
+      "estimated_weeks": 3,
+      "url": "https://bioresource.nihr.ac.uk/researchers/"
+    },
+    {
+      "order": 2,
+      "name": "DAC and ethics review",
+      "description": "Application reviewed by Data Access Committee for scientific merit; ethics approval confirmed",
+      "estimated_weeks": 8
+    },
+    {
+      "order": 3,
+      "name": "Data access agreement",
+      "description": "Negotiate and sign data access agreement with NIHR BioResource",
+      "estimated_weeks": 3
+    },
+    {
+      "order": 4,
+      "name": "Data/sample provision",
+      "description": "Approved data and/or samples provided to the research team",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 3, "max_weeks": 6, "notes": "Application preparation and initial engagement"},
+    {"phase": "Review", "min_weeks": 4, "typical_weeks": 8, "max_weeks": 12, "notes": "DAC review and ethics confirmation"},
+    {"phase": "Contracting", "min_weeks": 2, "typical_weeks": 3, "max_weeks": 4, "notes": "Data access agreement negotiation"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Data and/or sample preparation and delivery"}
+  ],
+  "costs": {
+    "application_fee": "Free for NIHR-funded research",
+    "annual_access_fee": null,
+    "tre_fee": null,
+    "notes": "Free for NIHR-funded studies. Other funders may incur access or sample processing fees. Recall-for-study costs vary by study requirements.",
+    "free_for": ["Academic researcher"]
+  },
+  "strengths": [
+    "Unique recall-for-study capability - can re-contact participants for new research",
+    "Active, consented volunteer cohort willing to participate in studies",
+    "Genomic data (whole genome sequencing) linked to health records",
+    "Rapid recruitment for clinical studies via recall",
+    "Disease-specific cohorts for targeted research"
+  ],
+  "limitations": [
+    "Volunteer cohort - not population-representative (healthy volunteer bias)",
+    "Smaller than population-level resources (200K+ vs millions)",
+    "England only",
+    "Recall-for-study adds complexity and cost for studies needing new data collection",
+    "Fees for non-NIHR funded research"
+  ],
+  "recent_changes": [
+    "Expanding volunteer cohort towards 300K target",
+    "Growing number of disease-specific sub-cohorts",
+    "Enhanced linked data including primary care records"
+  ],
+  "related_governance_bodies": ["hra_rec"],
+  "gateway_search_term": "NIHR BioResource",
+  "tags": ["genomics", "biobank", "recall", "cohort", "samples"],
+  "last_updated": "2026-02"
+}

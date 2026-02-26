@@ -1,0 +1,101 @@
+{
+  "id": "scottish_safe_havens",
+  "name": "Scottish Regional Safe Havens",
+  "short_name": "Scottish Safe Havens",
+  "description": "A network of regional safe havens across Scotland providing secure access to local and regional health data for research. These operate separately from the national routes (Research Data Scotland and eDRIS) and can offer access to local clinical datasets, potentially with faster turnaround for regional studies. Regional safe havens include those based at NHS boards and academic health science centres.",
+  "url": "https://www.researchdata.scot/",
+  "entity_type": "data_custodian",
+  "regions": ["Scotland"],
+  "access_model": "tre_only",
+  "population_coverage": "Regional Scottish populations (varies by safe haven)",
+  "patient_count": null,
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Primary care (GP records)",
+    "Local clinical datasets"
+  ],
+  "key_datasets": [
+    "Local hospital records",
+    "Regional GP data",
+    "Local clinical specialty datasets",
+    "Regional linked datasets"
+  ],
+  "linkages": [
+    "Local NHS board data",
+    "Regional clinical systems",
+    "Community Health Index (CHI) for linkage"
+  ],
+  "tre_platform": "Regional safe haven environments (varies by location)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy"],
+  "requirements": [
+    {
+      "name": "PBPP approval",
+      "description": "Public Benefit and Privacy Panel approval required for access to Scottish health data",
+      "mandatory": true,
+      "url": "https://www.informationgovernance.scot.nhs.uk/pbpphsc/"
+    },
+    {
+      "name": "Local governance approval",
+      "description": "Additional local governance arrangements may apply depending on the specific regional safe haven",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Contact regional safe haven",
+      "description": "Identify and contact the appropriate regional safe haven for the study area and data requirements",
+      "estimated_weeks": 2
+    },
+    {
+      "order": 2,
+      "name": "Submit governance applications",
+      "description": "Apply for PBPP approval and any local governance requirements specific to the regional safe haven",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "Governance review",
+      "description": "PBPP and local governance review of the application",
+      "estimated_weeks": 10
+    },
+    {
+      "order": 4,
+      "name": "Data provisioning",
+      "description": "Data prepared and workspace provisioned within the regional safe haven",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Engagement with regional safe haven and application preparation"},
+    {"phase": "Review", "min_weeks": 6, "typical_weeks": 10, "max_weeks": 16, "notes": "PBPP and local governance review"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Data preparation and safe haven workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "Varies by safe haven",
+    "annual_access_fee": null,
+    "tre_fee": "Varies by safe haven",
+    "notes": "Costs vary by regional safe haven. Many are free for approved academic research but arrangements differ across regions.",
+    "free_for": ["Academic researcher"]
+  },
+  "strengths": [
+    "May be faster than national routes for regional studies",
+    "Access to local clinical data not available through national platforms",
+    "Closer working relationship with local clinical teams and NHS boards",
+    "Can support studies focused on specific geographic areas"
+  ],
+  "limitations": [
+    "Regional scope - data limited to specific geographic areas",
+    "Varying capabilities, data holdings, and maturity across different safe havens",
+    "Less standardised processes compared to national routes (RDS, eDRIS)",
+    "May still require PBPP approval adding to timeline"
+  ],
+  "recent_changes": [
+    "Increasing alignment with national Safe Haven standards",
+    "Growing integration with Research Data Scotland coordination framework"
+  ],
+  "related_governance_bodies": ["pbpp_tier1", "pbpp_tier2", "hra_rec"],
+  "gateway_search_term": "Scottish Safe Haven",
+  "tags": ["scotland", "regional", "safe_haven", "local_data"],
+  "last_updated": "2026-02"
+}

@@ -1,0 +1,126 @@
+{
+  "id": "sail",
+  "name": "SAIL Databank",
+  "short_name": "SAIL",
+  "description": "The Secure Anonymised Information Linkage (SAIL) Databank is a national data repository for Wales, providing a privacy-protecting platform for linking and analysing person-level data from health, social care, education, housing, and other public services. Uses a unique split-file approach for de-identification, where demographic and clinical data are separated and linked via encrypted matching.",
+  "url": "https://saildatabank.com/",
+  "entity_type": "data_custodian",
+  "regions": ["Wales"],
+  "access_model": "tre_only",
+  "population_coverage": "Welsh population",
+  "patient_count": "3.5M",
+  "data_types": [
+    "Primary care (GP records)",
+    "Hospital episodes (HES/inpatient)",
+    "A&E attendances",
+    "Hospital outpatient",
+    "Social care",
+    "Education data",
+    "Housing data",
+    "Mental health records",
+    "Maternity records"
+  ],
+  "key_datasets": [
+    "Welsh GP Dataset",
+    "Patient Episode Database for Wales (PEDW)",
+    "Emergency Department Data Set (EDDS)",
+    "Outpatient Dataset",
+    "Welsh Demographic Service Dataset",
+    "Annual District Death Extract (ADDE)",
+    "Social care datasets",
+    "Education datasets (PLASC, LLWR)",
+    "Housing datasets"
+  ],
+  "linkages": [
+    "Cross-sector linkage (health, social care, education, housing)",
+    "ONS mortality data",
+    "Welsh Cancer Intelligence and Surveillance Unit",
+    "COVID-19 testing and vaccination data",
+    "DWP benefits data (selected)"
+  ],
+  "tre_platform": "SAIL Gateway (HDR UK-accredited Trusted Research Environment)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "IGRP approval",
+      "description": "Application reviewed by the Information Governance Review Panel, which includes public representatives and governance experts",
+      "mandatory": true,
+      "url": "https://saildatabank.com/application-process/",
+      "governance_body_id": "igrp_sail"
+    },
+    {
+      "name": "SAIL Gateway access",
+      "description": "Researchers must access data only within the SAIL Gateway secure environment",
+      "mandatory": true
+    },
+    {
+      "name": "Disclosure control",
+      "description": "All outputs must pass statistical disclosure control checks before release from the Gateway",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Initial enquiry and feasibility",
+      "description": "Contact SAIL team to discuss research question and data availability",
+      "estimated_weeks": 2,
+      "url": "https://saildatabank.com/application-process/"
+    },
+    {
+      "order": 2,
+      "name": "Submit IGRP application",
+      "description": "Complete and submit the application form to the Information Governance Review Panel",
+      "estimated_weeks": 2,
+      "governance_body_id": "igrp_sail"
+    },
+    {
+      "order": 3,
+      "name": "IGRP review",
+      "description": "Panel reviews application for governance compliance, public benefit, and data minimisation",
+      "estimated_weeks": 8,
+      "governance_body_id": "igrp_sail"
+    },
+    {
+      "order": 4,
+      "name": "Data preparation and provisioning",
+      "description": "SAIL team prepares the approved datasets within the Gateway environment",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Feasibility assessment and application preparation"},
+    {"phase": "Review", "min_weeks": 6, "typical_weeks": 8, "max_weeks": 12, "notes": "IGRP review process"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Data preparation and Gateway workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free for approved research",
+    "notes": "No fees for approved research projects. SAIL is funded by Health and Care Research Wales and Swansea University.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"]
+  },
+  "strengths": [
+    "Rich cross-sector linkage spanning health, social care, education, and housing data",
+    "Whole Welsh population coverage (3.5M)",
+    "Established and HDR UK-accredited Trusted Research Environment",
+    "Unique split-file de-identification approach providing strong privacy protection",
+    "Free access for approved research",
+    "Strong track record with 500+ active projects"
+  ],
+  "limitations": [
+    "Wales only - cannot access data from other UK nations",
+    "Smaller population (3.5M) compared to England-based resources",
+    "No data extraction - all analysis within SAIL Gateway",
+    "IGRP review can take several months"
+  ],
+  "recent_changes": [
+    "HDR UK accreditation as a Trusted Research Environment",
+    "Expanded data holdings including additional social care and housing datasets",
+    "Improved Gateway platform with enhanced analytical tools"
+  ],
+  "related_governance_bodies": ["igrp_sail", "hra_rec"],
+  "gateway_search_term": "SAIL Databank",
+  "tags": ["wales", "cross_sector", "linkage", "tre", "free", "population"],
+  "last_updated": "2026-02"
+}

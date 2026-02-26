@@ -1,0 +1,112 @@
+{
+  "id": "nhs_england_regional_sdes",
+  "name": "NHS England Regional Secure Data Environment Network",
+  "short_name": "Regional SDEs",
+  "description": "A network of 11 regional Secure Data Environments across England, each covering a specific geographic area and providing secure access to local and regional health data. Regional SDEs complement the national SDE by offering access to local clinical datasets and closer relationships with clinical teams. Each regional SDE has its own data holdings, processes, and governance arrangements.",
+  "url": "https://digital.nhs.uk/services/secure-data-environment-service",
+  "entity_type": "data_custodian",
+  "regions": ["England"],
+  "access_model": "tre_only",
+  "population_coverage": "England population (across 11 regional SDEs)",
+  "patient_count": "55M+",
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Primary care (GP records)",
+    "Local clinical datasets",
+    "Regional speciality data"
+  ],
+  "key_datasets": [
+    "Local hospital records",
+    "Regional primary care data",
+    "Local specialty clinical datasets",
+    "Regional linked datasets",
+    "Integrated care system data"
+  ],
+  "linkages": [
+    "Local NHS trust data",
+    "Regional primary care networks",
+    "Integrated care board data",
+    "National datasets (via SDE network federation)"
+  ],
+  "tre_platform": "Regional Secure Data Environments (11 separate platforms across England)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Industry (pharma/biotech)", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "Regional SDE application",
+      "description": "Submit a data access application to the specific regional SDE covering the area of interest",
+      "mandatory": true
+    },
+    {
+      "name": "Local governance approval",
+      "description": "Each regional SDE has its own governance processes and review arrangements",
+      "mandatory": true
+    },
+    {
+      "name": "SDE access agreement",
+      "description": "Formal agreement with the regional SDE governing data access and use",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Identify appropriate regional SDE",
+      "description": "Determine which of the 11 regional SDEs covers the geographic area and data required for the study",
+      "estimated_weeks": 2
+    },
+    {
+      "order": 2,
+      "name": "Submit application",
+      "description": "Complete and submit the data access application to the identified regional SDE",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "Governance review",
+      "description": "Regional SDE governance review of the application (process varies by SDE)",
+      "estimated_weeks": 8
+    },
+    {
+      "order": 4,
+      "name": "SDE provisioning",
+      "description": "Regional SDE workspace set up and data provisioned for the approved project",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "Identifying SDE, scoping data availability, preparing application"},
+    {"phase": "Review", "min_weeks": 4, "typical_weeks": 8, "max_weeks": 14, "notes": "Governance review (varies by regional SDE)"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "SDE workspace setup and data provisioning"}
+  ],
+  "costs": {
+    "application_fee": "Varies by SDE",
+    "annual_access_fee": null,
+    "tre_fee": "Varies by SDE - generally free for approved research",
+    "notes": "Costs vary across the 11 regional SDEs. Most are free for approved academic research. Some may charge for industry access or complex data preparations.",
+    "free_for": ["Academic researcher", "NHS analyst"]
+  },
+  "strengths": [
+    "Access to local and regional clinical data not available nationally",
+    "Closer working relationship with local clinical teams and NHS trusts",
+    "Potentially faster for local or regional studies",
+    "All 11 regional SDEs now operational across England",
+    "Part of the SDE network with potential for federated analysis"
+  ],
+  "limitations": [
+    "Varying maturity levels across the 11 regional SDEs",
+    "Inconsistent processes, governance, and data holdings across regions",
+    "No single entry point - researchers must identify the correct regional SDE",
+    "Some regional SDEs still building data holdings and infrastructure",
+    "England only"
+  ],
+  "recent_changes": [
+    "All 11 regional SDEs now operational (2025-2026)",
+    "Growing data holdings as more local datasets are onboarded",
+    "Increasing alignment of processes across the SDE network",
+    "Federated analysis capabilities being developed across SDE network"
+  ],
+  "related_governance_bodies": ["hra_rec", "cag"],
+  "gateway_search_term": "NHS England Regional SDE",
+  "tags": ["regional", "sde", "local_data", "england", "network"],
+  "last_updated": "2026-02"
+}

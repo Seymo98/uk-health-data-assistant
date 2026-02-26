@@ -1,0 +1,133 @@
+{
+  "id": "opensafely",
+  "name": "OpenSAFELY",
+  "short_name": "OpenSAFELY",
+  "description": "A secure analytics platform for electronic health records, enabling approved researchers to run analyses against GP data from 55M+ patients in England. Pioneered a transparency-first, code-runs-on-data model where researchers submit analysis code via GitHub and outputs are reviewed before release.",
+  "url": "https://www.opensafely.org/",
+  "entity_type": "data_custodian",
+  "regions": ["England"],
+  "access_model": "code_in_situ",
+  "population_coverage": "England GP-registered population",
+  "patient_count": "55M+",
+  "data_types": [
+    "Primary care (GP records)",
+    "Hospital episodes (HES/inpatient)",
+    "Mortality/death registrations",
+    "COVID-19 specific",
+    "Prescription data",
+    "A&E attendances"
+  ],
+  "key_datasets": [
+    "TPP SystmOne GP data",
+    "EMIS GP data",
+    "Hospital Episode Statistics (HES)",
+    "ONS mortality",
+    "SGSS (COVID testing)",
+    "ICNARC (intensive care)",
+    "Emergency Care Data Set (ECDS)"
+  ],
+  "linkages": [
+    "HES",
+    "ONS deaths",
+    "SGSS",
+    "ECDS",
+    "ICNARC"
+  ],
+  "tre_platform": "OpenSAFELY platform (code submitted via GitHub, runs on backends)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy"],
+  "requirements": [
+    {
+      "name": "GitHub repository",
+      "description": "All analysis code must be in a public GitHub repository for full transparency",
+      "mandatory": true,
+      "url": "https://github.com/opensafely"
+    },
+    {
+      "name": "Study definition in code",
+      "description": "Research questions defined as executable code using the OpenSAFELY cohort-extractor",
+      "mandatory": true
+    },
+    {
+      "name": "Output review",
+      "description": "All outputs undergo disclosure review before release from the secure environment",
+      "mandatory": true
+    },
+    {
+      "name": "Pre-print commitment",
+      "description": "Commitment to publish results as pre-prints for transparency",
+      "mandatory": true
+    },
+    {
+      "name": "Coding skills",
+      "description": "Researchers must be able to write Python/R analysis code",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Submit study proposal",
+      "description": "Describe research question, proposed analysis, and public benefit",
+      "estimated_weeks": 2
+    },
+    {
+      "order": 2,
+      "name": "Develop code on synthetic data",
+      "description": "Write and test analysis code against synthetic data in the open",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "Code review",
+      "description": "OpenSAFELY team reviews code for governance and technical compliance",
+      "estimated_weeks": 2
+    },
+    {
+      "order": 4,
+      "name": "Run on real data",
+      "description": "Approved code executed against real patient data in the secure backend",
+      "estimated_weeks": 1
+    },
+    {
+      "order": 5,
+      "name": "Output review and release",
+      "description": "Results undergo disclosure checking before release",
+      "estimated_weeks": 2
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "Proposal submission and initial engagement"},
+    {"phase": "Development", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 8, "notes": "Code development on synthetic data - duration depends on complexity"},
+    {"phase": "Review", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "Code review and governance checks"},
+    {"phase": "Provisioning", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "Execution and output review"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "tre_fee": "Free",
+    "notes": "Free for approved public-good research. Expanding funding sources beyond COVID.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy"]
+  },
+  "strengths": [
+    "Fastest turnaround of any major platform",
+    "Gold-standard transparency - all code public",
+    "55M+ patient coverage via TPP + EMIS",
+    "Strong disclosure control",
+    "Active development and support team"
+  ],
+  "limitations": [
+    "Requires coding skills (Python/R)",
+    "No data extraction - code must run within platform",
+    "Historically COVID-focused (broadening to other areas)",
+    "Output review adds time",
+    "Not available for purely commercial research"
+  ],
+  "recent_changes": [
+    "EMIS backend now available alongside TPP",
+    "Broadening beyond COVID to wider disease areas with Wellcome funding",
+    "Over 200 active projects"
+  ],
+  "related_governance_bodies": ["hra_rec"],
+  "gateway_search_term": "OpenSAFELY",
+  "tags": ["primary_care", "transparency", "code_first", "fast", "free"],
+  "last_updated": "2026-02"
+}

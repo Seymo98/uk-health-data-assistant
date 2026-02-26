@@ -18,7 +18,7 @@ st.set_page_config(page_title="UK Health Data Assistant", page_icon=":microscope
 def load_system_prompt():
     """Load the system prompt from external file"""
     try:
-        with open("system_prompt_v3_structured.txt", "r") as f:
+        with open("system_prompt_v4_navigator.txt", "r") as f:
             return f.read().strip()
     except FileNotFoundError:
         # Fallback to hardcoded prompt if file not found
@@ -378,16 +378,23 @@ with st.sidebar:
         if st.button("UK Biobank", key="ukb_link", use_container_width=True):
             st.link_button("Open", get_dataset_info("UK Biobank"), use_container_width=True)
 
+    # DATA ACCESS NAVIGATOR
+    st.divider()
+    st.header("Data Access Navigator")
+    st.markdown("Get personalised pathway recommendations based on your research needs.")
+    st.page_link("pages/3_🧭_Data_Access_Navigator.py", label="Open Navigator", icon="🧭", use_container_width=True)
+
     # ABOUT
     st.divider()
     st.markdown("""
     ### About
     This assistant helps researchers discover and access UK health datasets.
 
-    **Version:** 3.1
+    **Version:** 4.0
     **Powered by:** OpenAI GPT-4o
 
     **Features:**
+    - 🧭 Data Access Navigator
     - 📥 Export conversations
     - 🔗 Dataset links
     - 👍 Response feedback
@@ -529,6 +536,24 @@ if prompt := st.chat_input("Ask your health data question..."):
 
                     # Prepare messages for API
                     api_messages = [{"role": "system", "content": system_prompt}]
+
+                    # Inject Navigator context if available
+                    if "navigator_results" in st.session_state and st.session_state.navigator_results:
+                        nav_recs = st.session_state.navigator_results
+                        nav_summary = "\n".join(
+                            f"- {r.custodian.short_name} ({r.overall_score:.0f}% match, "
+                            f"~{r.estimated_total_weeks}wk, {r.estimated_cost_range})"
+                            for r in nav_recs[:6]
+                        )
+                        api_messages.append({
+                            "role": "system",
+                            "content": (
+                                "The user has completed the Data Access Navigator. "
+                                "Their top pathway recommendations:\n" + nav_summary + "\n"
+                                "Reference these when answering their questions about data access."
+                            ),
+                        })
+
                     api_messages.extend(st.session_state.messages)
 
                     # Stream the response

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DataCustodian",
+  "description": "Schema for a UK health data custodian / access pathway JSON file.",
+  "type": "object",
+  "required": ["id", "name", "short_name", "description", "url", "regions", "access_model", "data_types"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "name": { "type": "string" },
+    "short_name": { "type": "string" },
+    "description": { "type": "string" },
+    "url": { "type": "string", "format": "uri" },
+    "entity_type": {
+      "type": "string",
+      "enum": ["data_custodian", "governance_body", "infrastructure_provider"],
+      "default": "data_custodian"
+    },
+    "regions": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["England", "Wales", "Scotland", "Northern Ireland", "UK-wide"] }
+    },
+    "access_model": {
+      "type": "string",
+      "enum": ["tre_only", "data_extract", "code_in_situ", "hybrid"]
+    },
+    "population_coverage": { "type": ["string", "null"] },
+    "patient_count": { "type": ["string", "null"] },
+    "data_types": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "key_datasets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "linkages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "tre_platform": { "type": ["string", "null"] },
+    "eligible_researchers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "mandatory": { "type": "boolean", "default": true },
+          "applies_to": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "url": { "type": ["string", "null"] }
+        }
+      },
+      "default": []
+    },
+    "access_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["order", "name", "description", "estimated_weeks"],
+        "properties": {
+          "order": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "estimated_weeks": { "type": "integer" },
+          "url": { "type": ["string", "null"] },
+          "governance_body_id": { "type": ["string", "null"] }
+        }
+      },
+      "default": []
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "min_weeks", "typical_weeks", "max_weeks"],
+        "properties": {
+          "phase": { "type": "string" },
+          "min_weeks": { "type": "integer" },
+          "typical_weeks": { "type": "integer" },
+          "max_weeks": { "type": "integer" },
+          "notes": { "type": ["string", "null"] }
+        }
+      },
+      "default": []
+    },
+    "costs": {
+      "type": ["object", "null"],
+      "properties": {
+        "application_fee": { "type": ["string", "null"] },
+        "annual_access_fee": { "type": ["string", "null"] },
+        "per_dataset_fee": { "type": ["string", "null"] },
+        "tre_fee": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] },
+        "free_for": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "strengths": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "limitations": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "recent_changes": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "related_governance_bodies": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "gateway_search_term": { "type": ["string", "null"] },
+    "tags": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "contact_email": { "type": ["string", "null"] },
+    "last_updated": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

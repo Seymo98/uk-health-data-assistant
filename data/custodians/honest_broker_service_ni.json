@@ -1,0 +1,118 @@
+{
+  "id": "honest_broker_ni",
+  "name": "Northern Ireland Honest Broker Service",
+  "short_name": "HBS NI",
+  "description": "The Honest Broker Service (HBS) is the primary route for accessing de-identified health and social care data from Northern Ireland's Health and Social Care (HSC) system for research purposes. It provides data through the Northern Ireland Trusted Research Environment (NITRE), acting as an independent intermediary between data controllers and researchers.",
+  "url": "https://hbs.hscni.net/",
+  "entity_type": "data_custodian",
+  "regions": ["Northern Ireland"],
+  "access_model": "tre_only",
+  "population_coverage": "Northern Ireland population",
+  "patient_count": "1.9M",
+  "data_types": [
+    "Hospital episodes (HES/inpatient)",
+    "Primary care (GP records)",
+    "Prescription data",
+    "Mental health records",
+    "Social care"
+  ],
+  "key_datasets": [
+    "Hospital Inpatient System (HIS)",
+    "GP referral and registration data",
+    "Enhanced Prescribing Database (EPD)",
+    "Mental health datasets",
+    "Social care data",
+    "Northern Ireland Cancer Registry",
+    "General Register Office (births, deaths, marriages)",
+    "Emergency care data"
+  ],
+  "linkages": [
+    "HSC system data across all NI trusts",
+    "NI Cancer Registry",
+    "General Register Office (NI)",
+    "Prescribing data",
+    "Social care records"
+  ],
+  "tre_platform": "Northern Ireland Trusted Research Environment (NITRE)",
+  "eligible_researchers": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"],
+  "requirements": [
+    {
+      "name": "HBS application",
+      "description": "Submit a formal application to the Honest Broker Service detailing research requirements and data justification",
+      "mandatory": true,
+      "url": "https://hbs.hscni.net/"
+    },
+    {
+      "name": "Governance committee approval",
+      "description": "Application reviewed by the HBS governance committee for public benefit, data minimisation, and legal basis",
+      "mandatory": true
+    },
+    {
+      "name": "NITRE access",
+      "description": "Approved researchers access data within the Northern Ireland Trusted Research Environment",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Initial enquiry and feasibility",
+      "description": "Contact HBS to discuss research requirements and data availability within the NI HSC system",
+      "estimated_weeks": 3,
+      "url": "https://hbs.hscni.net/"
+    },
+    {
+      "order": 2,
+      "name": "Submit HBS application",
+      "description": "Complete the formal application including study protocol, data specification, and legal basis",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "Governance review",
+      "description": "HBS governance committee reviews the application for compliance and public benefit",
+      "estimated_weeks": 10
+    },
+    {
+      "order": 4,
+      "name": "NITRE provisioning",
+      "description": "Approved data prepared and workspace provisioned within NITRE",
+      "estimated_weeks": 4
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 3, "typical_weeks": 5, "max_weeks": 8, "notes": "HBS engagement, feasibility, and application preparation"},
+    {"phase": "Review", "min_weeks": 6, "typical_weeks": 10, "max_weeks": 16, "notes": "HBS governance committee review"},
+    {"phase": "Provisioning", "min_weeks": 2, "typical_weeks": 4, "max_weeks": 6, "notes": "Data preparation and NITRE workspace setup"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free for approved research",
+    "notes": "No fees for approved research. The Honest Broker Service is publicly funded within NI HSC.",
+    "free_for": ["Academic researcher", "NHS analyst", "Government/policy", "Charity/third sector"]
+  },
+  "strengths": [
+    "Only route to Northern Ireland health and social care data for research",
+    "Covers the entire NI HSC system including all trusts",
+    "Honest broker model provides independent de-identification",
+    "Free access for approved research",
+    "Integrated health and social care data (NI has a combined HSC system)"
+  ],
+  "limitations": [
+    "Smallest UK population (1.9M)",
+    "Less developed infrastructure compared to other UK nations",
+    "NITRE platform still maturing",
+    "Limited linkage options compared to England, Scotland, or Wales",
+    "Fewer researchers and projects means less community support"
+  ],
+  "recent_changes": [
+    "NITRE (Northern Ireland Trusted Research Environment) established and operational",
+    "Growing data holdings and linkage capabilities",
+    "Alignment with UK-wide TRE standards and HDR UK network"
+  ],
+  "related_governance_bodies": ["nitre", "hra_rec"],
+  "gateway_search_term": "Honest Broker Service Northern Ireland",
+  "tags": ["northern_ireland", "hsc", "tre", "free", "honest_broker"],
+  "last_updated": "2026-02"
+}

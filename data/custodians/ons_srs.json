@@ -1,0 +1,116 @@
+{
+  "id": "ons_srs",
+  "name": "ONS Secure Research Service",
+  "short_name": "ONS SRS",
+  "description": "The Office for National Statistics Secure Research Service (SRS) provides secure access to de-identified census, survey, and linked administrative data for accredited researchers. Researchers must hold DEA (Digital Economy Act) Accredited Researcher status to access data. Covers primarily England and Wales administrative data with some UK-wide datasets.",
+  "url": "https://www.ons.gov.uk/aboutus/whatwedo/statistics/requestingstatistics/secureresearchservice",
+  "entity_type": "data_custodian",
+  "regions": ["UK-wide"],
+  "access_model": "tre_only",
+  "population_coverage": "England and Wales population (census), with some UK-wide datasets",
+  "patient_count": null,
+  "data_types": [
+    "Administrative/billing data",
+    "Linked social/education data",
+    "Mortality/death registrations"
+  ],
+  "key_datasets": [
+    "Census 2021 microdata",
+    "Annual Population Survey",
+    "Labour Force Survey",
+    "Longitudinal Study (ONS LS)",
+    "Linked administrative data (education, benefits, tax)",
+    "ONS mortality data",
+    "Business Structure Database",
+    "Annual Survey of Hours and Earnings"
+  ],
+  "linkages": [
+    "Census to administrative records",
+    "Education data (NPD, HESA)",
+    "DWP benefits data",
+    "HMRC tax and earnings data",
+    "NHS mortality records"
+  ],
+  "tre_platform": "ONS Secure Research Service",
+  "eligible_researchers": ["Academic researcher", "Government/policy"],
+  "requirements": [
+    {
+      "name": "DEA Accredited Researcher status",
+      "description": "Researchers must obtain Accredited Researcher status under the Digital Economy Act 2017 before applying for project access",
+      "mandatory": true,
+      "url": "https://www.ons.gov.uk/aboutus/whatwedo/statistics/requestingstatistics/secureresearchservice/becomeanaccreditedresearcher"
+    },
+    {
+      "name": "Accredited project application",
+      "description": "Submit a project application demonstrating public benefit and specifying data requirements",
+      "mandatory": true
+    },
+    {
+      "name": "Output clearance",
+      "description": "All outputs undergo statistical disclosure control before release from the SRS",
+      "mandatory": true
+    }
+  ],
+  "access_steps": [
+    {
+      "order": 1,
+      "name": "Obtain DEA Accredited Researcher status",
+      "description": "Complete the accreditation process including training and assessment under the Digital Economy Act",
+      "estimated_weeks": 6,
+      "url": "https://www.ons.gov.uk/aboutus/whatwedo/statistics/requestingstatistics/secureresearchservice/becomeanaccreditedresearcher"
+    },
+    {
+      "order": 2,
+      "name": "Submit project application",
+      "description": "Apply for project approval specifying research question, datasets required, and public benefit",
+      "estimated_weeks": 4
+    },
+    {
+      "order": 3,
+      "name": "Project review",
+      "description": "ONS reviews the project application for public benefit, feasibility, and data proportionality",
+      "estimated_weeks": 6
+    },
+    {
+      "order": 4,
+      "name": "SRS access provisioned",
+      "description": "Approved researchers granted access to the SRS environment with specified datasets",
+      "estimated_weeks": 2
+    }
+  ],
+  "timeline": [
+    {"phase": "Preparation", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 12, "notes": "DEA Accredited Researcher accreditation (can be done in advance)"},
+    {"phase": "Review", "min_weeks": 4, "typical_weeks": 6, "max_weeks": 8, "notes": "Project application review"},
+    {"phase": "Provisioning", "min_weeks": 1, "typical_weeks": 2, "max_weeks": 4, "notes": "SRS workspace setup and data access provisioning"}
+  ],
+  "costs": {
+    "application_fee": "Free",
+    "annual_access_fee": null,
+    "tre_fee": "Free for accredited researchers",
+    "notes": "No fees for accredited researchers with approved projects. DEA accreditation process is also free.",
+    "free_for": ["Academic researcher", "Government/policy"]
+  },
+  "strengths": [
+    "Census data providing whole population coverage for England and Wales",
+    "Unique linked administrative data (education, benefits, tax, mortality)",
+    "DEA legal basis provides strong framework for data access",
+    "Free access for accredited researchers",
+    "Long time series available for longitudinal research"
+  ],
+  "limitations": [
+    "Not health-specific - limited clinical data available",
+    "DEA Accredited Researcher status required (takes weeks to obtain)",
+    "Primarily England and Wales (not all datasets cover Scotland or NI)",
+    "No data extraction - all analysis within SRS",
+    "Statistical disclosure control can be restrictive for small-area analyses"
+  ],
+  "recent_changes": [
+    "Census 2021 microdata now available in SRS",
+    "Expanding linked administrative datasets",
+    "Improved SRS platform and remote access capabilities"
+  ],
+  "related_governance_bodies": [],
+  "gateway_search_term": "ONS Secure Research Service",
+  "tags": ["census", "administrative", "linked_data", "tre", "free", "dea"],
+  "last_updated": "2026-02"
+}

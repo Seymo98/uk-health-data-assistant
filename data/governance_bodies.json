@@ -1,0 +1,96 @@
+[
+  {
+    "id": "cag",
+    "name": "Confidentiality Advisory Group",
+    "short_name": "CAG",
+    "description": "Provides Section 251 support under the NHS Act 2006, allowing the common law duty of confidentiality to be set aside for specific medical purposes where consent is not practicable. Required when using identifiable patient data without explicit consent in England and Wales.",
+    "url": "https://www.hra.nhs.uk/about-us/committees-and-services/confidentiality-advisory-group/",
+    "nations": ["England", "Wales"],
+    "role": "Section 251 approval for use of identifiable data without consent",
+    "tiers": []
+  },
+  {
+    "id": "pbpp_tier1",
+    "name": "Public Benefit and Privacy Panel - Tier 1",
+    "short_name": "PBPP Tier 1",
+    "description": "Standard-track approval for research data access in Scotland. Handles straightforward requests for de-identified or aggregate data where governance requirements are well-established.",
+    "url": "https://www.informationgovernance.scot.nhs.uk/pbpphsc/",
+    "nations": ["Scotland"],
+    "role": "Standard data access approval for Scottish health data",
+    "tiers": [
+      {
+        "tier_name": "Tier 1 - Standard",
+        "description": "For standard applications using de-identified data with established governance pathways",
+        "typical_weeks": 6,
+        "criteria": "De-identified data, standard linkage, established precedent"
+      }
+    ]
+  },
+  {
+    "id": "pbpp_tier2",
+    "name": "Public Benefit and Privacy Panel - Tier 2",
+    "short_name": "PBPP Tier 2",
+    "description": "Complex-track approval for research data access in Scotland. Required for applications involving sensitive data, novel linkages, or where additional scrutiny is needed.",
+    "url": "https://www.informationgovernance.scot.nhs.uk/pbpphsc/",
+    "nations": ["Scotland"],
+    "role": "Complex/sensitive data access approval for Scottish health data",
+    "tiers": [
+      {
+        "tier_name": "Tier 2 - Complex",
+        "description": "For complex applications involving sensitive data, novel linkages, or requiring additional scrutiny",
+        "typical_weeks": 12,
+        "criteria": "Sensitive data, novel linkage, identifiable data, no established precedent"
+      }
+    ]
+  },
+  {
+    "id": "hra_rec",
+    "name": "Health Research Authority / Research Ethics Committees",
+    "short_name": "HRA/REC",
+    "description": "The HRA protects the interests of participants in health and social care research across the UK. Research Ethics Committees review research proposals for ethical standards. Required for most studies involving NHS patients, their data, or NHS staff.",
+    "url": "https://www.hra.nhs.uk/",
+    "nations": ["England", "Wales", "Scotland", "Northern Ireland"],
+    "role": "Research ethics approval and HRA approval for NHS-related research",
+    "tiers": []
+  },
+  {
+    "id": "nitre",
+    "name": "Northern Ireland Trusted Research Environment",
+    "short_name": "NITRE",
+    "description": "Northern Ireland's Trusted Research Environment providing secure access to health and social care data from the HSC system. Managed as part of Northern Ireland's health data infrastructure.",
+    "url": "https://www.hscni.net/",
+    "nations": ["Northern Ireland"],
+    "role": "Secure data access infrastructure for Northern Ireland health data",
+    "tiers": []
+  },
+  {
+    "id": "igrp_sail",
+    "name": "SAIL Information Governance Review Panel",
+    "short_name": "IGRP",
+    "description": "Independent panel that reviews all applications for access to SAIL Databank. Includes public representatives and governance experts. Assesses whether proposed data use is appropriate, proportionate, and in the public interest.",
+    "url": "https://saildatabank.com/application-process/",
+    "nations": ["Wales"],
+    "role": "Data access approval for SAIL Databank",
+    "tiers": []
+  },
+  {
+    "id": "dac_genomics",
+    "name": "Genomics England Data Access Committee",
+    "short_name": "GE DAC",
+    "description": "Reviews and approves applications for access to Genomics England research data. Assesses scientific merit, data governance, and alignment with participant consent.",
+    "url": "https://www.genomicsengland.co.uk/research",
+    "nations": ["England"],
+    "role": "Data access approval for Genomics England research environment",
+    "tiers": []
+  },
+  {
+    "id": "isac_cprd",
+    "name": "CPRD Independent Scientific Advisory Committee",
+    "short_name": "ISAC",
+    "description": "Reviews scientific protocols for studies requesting CPRD data. Assesses scientific merit, feasibility, and whether the data request is proportionate to the research question.",
+    "url": "https://cprd.com/how-access-cprd-data",
+    "nations": ["England", "Wales", "Scotland", "Northern Ireland"],
+    "role": "Scientific and governance review for CPRD data access",
+    "tiers": []
+  }
+]
