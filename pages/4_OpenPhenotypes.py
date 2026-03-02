@@ -26,6 +26,8 @@ from openphenotypes.models import (
     PhenotypeType,
     TherapeuticArea,
     ValidationStatus,
+    validate_phenotype,
+    validation_summary,
 )
 from openphenotypes.sample_data import (
     ALL_PHENOTYPES,
@@ -39,9 +41,11 @@ from openphenotypes.visualizations import (
     create_data_source_coverage,
     create_evidence_bars,
     create_evidence_radar,
+    create_fair_completeness_chart,
     create_overall_score_gauge,
     create_source_repository_chart,
     create_therapeutic_area_chart,
+    create_validation_metrics_chart,
     create_validation_status_pie,
 )
 
@@ -442,10 +446,26 @@ def render_browse_view():
                     f'<span class="op-badge op-badge-blue">{cs.value}</span>'
                     for cs in p.coding_systems
                 )
+                # Accession ID badge
+                accession_html = ""
+                if p.accession.number > 0:
+                    accession_html = f'<span class="op-badge op-badge-purple">{p.accession.accession}</span>'
+                # Core vs use indicator
+                hierarchy_badge = ""
+                if not p.is_core_definition:
+                    hierarchy_badge = '<span class="op-badge op-badge-orange">Study use</span>'
+                # Ontology term
+                ontology_html = ""
+                if p.primary_ontology_term:
+                    t = p.primary_ontology_term
+                    ontology_html = f'<span class="op-badge op-badge-teal">{t.system}: {t.label}</span>'
 
                 st.markdown(f"""
                 <div class="op-card">
-                    <div class="op-card-title">{p.name}</div>
+                    <div style="display:flex;align-items:baseline;gap:0.5rem;">
+                        <div class="op-card-title">{p.name}</div>
+                        {accession_html} {hierarchy_badge}
+                    </div>
                     <div class="op-card-meta" style="margin-bottom:0.4rem;">
                         {p.description[:150]}{'...' if len(p.description) > 150 else ''}
                     </div>
@@ -454,6 +474,7 @@ def render_browse_view():
                         <span class="op-badge {status_badge}">{p.validation_status.value}</span>
                         <span class="op-badge op-badge-grey">{p.phenotype_type.value}</span>
                         <span class="op-badge op-badge-grey">v{p.version}</span>
+                        {ontology_html}
                     </div>
                     <div style="margin-bottom:0.3rem;">{coding_badges}</div>
                     <div style="display:flex;align-items:center;gap:1rem;font-size:0.82rem;color:#546e7a;">
@@ -544,16 +565,32 @@ def render_detail_view():
         phenotype.validation_status, "op-badge-grey"
     )
 
+    # Accession and ontology info for header
+    accession_html = ""
+    if phenotype.accession.number > 0:
+        accession_html = (
+            f'<span class="op-badge op-badge-purple">{phenotype.accession.accession}</span>'
+        )
+    ontology_html = ""
+    for term in phenotype.ontology_terms:
+        ontology_html += f'<span class="op-badge op-badge-teal">{term.system}: {term.code} ({term.label})</span> '
+    hierarchy_html = ""
+    if not phenotype.is_core_definition:
+        hierarchy_html = '<span class="op-badge op-badge-orange">Study-specific use</span>'
+
     st.markdown(f"""
     <div style="border-bottom:3px solid #0d47a1;padding-bottom:1rem;margin-bottom:1.5rem;">
         <h1 style="margin-bottom:0.2rem;color:#0d47a1;">{phenotype.name}</h1>
-        <div style="margin-bottom:0.5rem;">
+        <div style="margin-bottom:0.3rem;">
+            {accession_html}
             <span class="op-badge {area_badge}">{phenotype.therapeutic_area.value}</span>
             <span class="op-badge {status_badge}">{phenotype.validation_status.value}</span>
             <span class="op-badge op-badge-grey">{phenotype.phenotype_type.value}</span>
             <span class="op-badge op-badge-grey">v{phenotype.version}</span>
             <span class="op-badge op-badge-blue">{phenotype.source_repository}</span>
+            {hierarchy_html}
         </div>
+        <div style="margin-bottom:0.3rem;">{ontology_html}</div>
         <p style="color:#546e7a;margin:0;">{phenotype.description}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -562,10 +599,13 @@ def render_detail_view():
     widgets_data = [
         ("Codes", phenotype.total_codes > 0),
         ("Evidence", phenotype.evidence_score.overall > 0),
+        ("Valid", len(phenotype.validations) > 0),
+        ("Impl", len(phenotype.implementations) > 0),
         ("Pubs", len(phenotype.publications) > 0),
         ("Sources", len(phenotype.data_sources) > 0),
         ("Method", bool(phenotype.methodology)),
-        ("Related", len(phenotype.related_phenotype_ids) > 0),
+        ("QC", len(phenotype.qc_rules) > 0),
+        ("Related", len(phenotype.related_phenotype_ids) > 0 or len(phenotype.child_use_ids) > 0),
     ]
     widget_html = ""
     for label, active in widgets_data:
@@ -588,14 +628,18 @@ def render_detail_view():
     (
         tab_codes,
         tab_evidence,
+        tab_implementation,
         tab_metadata,
         tab_sources,
+        tab_fair,
         tab_download,
     ) = st.tabs([
         "Codelists & Codes",
         "Evidence & Validation",
+        "Implementation",
         "Metadata & Provenance",
         "Data Sources",
+        "FAIR Compliance",
         "Download",
     ])
 
@@ -611,22 +655,30 @@ def render_detail_view():
 
         # Individual codelists
         for cl in phenotype.codelists:
+            version_info = f"v{cl.version}"
+            if cl.coding_system_version:
+                version_info += f" | {cl.coding_system_version}"
+
             with st.expander(
                 f"{cl.coding_system.value} — {cl.name} "
-                f"({cl.code_count} codes, v{cl.version})",
+                f"({cl.code_count} codes, {version_info})",
                 expanded=True,
             ):
                 if cl.description:
                     st.caption(cl.description)
 
-                # Code table
+                # Code table with expanded attributes
                 code_data = []
                 for code in cl.codes:
-                    code_data.append({
+                    row = {
                         "Code": code.code,
                         "Term": code.term,
                         "Status": "Included" if code.is_included else "Excluded",
-                    })
+                        "Position": code.code_position.value,
+                    }
+                    if code.notes:
+                        row["Notes"] = code.notes
+                    code_data.append(row)
                 df = pd.DataFrame(code_data)
 
                 # Style excluded codes
@@ -672,11 +724,52 @@ def render_detail_view():
             else:
                 st.info("No methodology documentation available.")
 
+        # Structured validation evidence (E)
+        if phenotype.validations:
+            st.subheader("Validation studies")
+            st.plotly_chart(
+                create_validation_metrics_chart(phenotype.validations),
+                use_container_width=True,
+            )
+            for i, val in enumerate(phenotype.validations):
+                with st.expander(f"Validation {i+1}: {val.method.value} — {val.dataset}"):
+                    vcol1, vcol2 = st.columns(2)
+                    with vcol1:
+                        if val.ppv is not None:
+                            st.metric("PPV", f"{val.ppv:.0%}")
+                        if val.sensitivity is not None:
+                            st.metric("Sensitivity", f"{val.sensitivity:.0%}")
+                        if val.sample_size is not None:
+                            st.metric("Sample size", f"{val.sample_size:,}")
+                    with vcol2:
+                        if val.specificity is not None:
+                            st.metric("Specificity", f"{val.specificity:.0%}")
+                        if val.npv is not None:
+                            st.metric("NPV", f"{val.npv:.0%}")
+                        if val.comparator:
+                            st.caption(f"**Comparator:** {val.comparator}")
+                    if val.notes:
+                        st.markdown(val.notes)
+                    if val.publication_doi:
+                        st.caption(f"DOI: {val.publication_doi}")
+
+        # Clinical endorsements
+        if phenotype.clinical_endorsements:
+            st.subheader("Clinical endorsements")
+            for ce in phenotype.clinical_endorsements:
+                ce_text = f"**{ce.reviewer_name}** — {ce.reviewer_role}, {ce.institution}"
+                if ce.date:
+                    ce_text += f" ({ce.date.isoformat()})"
+                st.markdown(ce_text)
+                if ce.notes:
+                    st.caption(ce.notes)
+
         # Publications
         if phenotype.publications:
             st.subheader("Publications")
             for pub in phenotype.publications:
-                pub_text = f"**{pub.title}**"
+                primary_marker = " **[Primary]**" if pub.is_primary else ""
+                pub_text = f"**{pub.title}**{primary_marker}"
                 if pub.journal:
                     pub_text += f" — *{pub.journal}*"
                 if pub.year:
@@ -687,11 +780,79 @@ def render_detail_view():
                 if pub.pubmed_id:
                     st.caption(f"PubMed: {pub.pubmed_id}")
 
+    # ----- Implementation (D) -----
+    with tab_implementation:
+        if phenotype.logic_description:
+            st.subheader("Algorithm description")
+            st.markdown(phenotype.logic_description)
+
+        if phenotype.implementations:
+            st.subheader("Reference implementations")
+            for impl in phenotype.implementations:
+                with st.expander(f"{impl.label} ({impl.language})"):
+                    if impl.dataset_target:
+                        st.caption(f"Target dataset: {impl.dataset_target}")
+                    st.code(impl.code, language=impl.language.lower() if impl.language.lower() in ("sql", "python") else None)
+                    if impl.source_url:
+                        st.caption(f"Source: {impl.source_url}")
+                    if impl.notes:
+                        st.caption(impl.notes)
+        else:
+            st.info("No reference implementations available yet.")
+
+        if phenotype.dummy_data_examples:
+            st.subheader("Worked examples (dummy data)")
+            for ex in phenotype.dummy_data_examples:
+                with st.expander(ex.description):
+                    st.markdown("**Input data:**")
+                    st.code(ex.input_data)
+                    st.markdown("**Expected output:**")
+                    st.code(ex.expected_output)
+                    if ex.notes:
+                        st.caption(ex.notes)
+
+        if phenotype.qc_rules:
+            st.subheader("Quality control rules")
+            for rule in phenotype.qc_rules:
+                severity_icon = {"error": "!!!", "warning": "!!", "info": "i"}.get(rule.severity, "?")
+                st.markdown(
+                    f"**[{rule.rule_id}]** ({rule.severity}) {rule.description}"
+                )
+                if rule.applies_to:
+                    st.caption(f"Applies to: {rule.applies_to}")
+
+        if phenotype.data_preprocessing:
+            st.subheader("Dataset-specific preprocessing")
+            st.markdown(phenotype.data_preprocessing)
+
+        if not any([phenotype.implementations, phenotype.dummy_data_examples,
+                     phenotype.qc_rules, phenotype.logic_description]):
+            st.info(
+                "No implementation artefacts available. "
+                "Consider contributing pseudocode, SQL, or Python implementations."
+            )
+
     # ----- Metadata & Provenance -----
     with tab_metadata:
         mcol1, mcol2 = st.columns(2)
 
         with mcol1:
+            st.subheader("Identifiers")
+            id_rows = [
+                ("Phenotype ID", f"`{phenotype.id}`"),
+                ("Version", phenotype.version),
+            ]
+            if phenotype.accession.number > 0:
+                id_rows.append(("Accession", f"`{phenotype.accession.accession}`"))
+                id_rows.append(("Stable URL", f"`{phenotype.accession.stable_url}`"))
+                id_rows.append(("Latest URL", f"`{phenotype.accession.latest_url}`"))
+            if phenotype.source_code_url:
+                id_rows.append(("Source code", phenotype.source_code_url))
+            id_table = "| Field | Value |\n|-------|-------|\n"
+            for field_name, value in id_rows:
+                id_table += f"| {field_name} | {value} |\n"
+            st.markdown(id_table)
+
             st.subheader("Authors")
             for author in phenotype.authors:
                 author_text = f"**{author.name}** — {author.institution}"
@@ -707,16 +868,67 @@ def render_detail_view():
             | Created | {phenotype.created_date.isoformat()} |
             | Last updated | {phenotype.updated_date.isoformat()} |
             | Source repository | {phenotype.source_repository} |
-            | Phenotype ID | `{phenotype.id}` |
             """)
 
+            # Population constraints (Table 1)
+            st.subheader("Population constraints")
+            pop = phenotype.population
+            pop_rows = [("Sex", pop.sex.value)]
+            if pop.age_min is not None or pop.age_max is not None:
+                age_range = f"{pop.age_min or 'any'} – {pop.age_max or 'any'}"
+                pop_rows.append(("Age range", age_range))
+            if pop.inclusion_criteria:
+                pop_rows.append(("Inclusion criteria", pop.inclusion_criteria))
+            if pop.exclusion_criteria:
+                pop_rows.append(("Exclusion criteria", pop.exclusion_criteria))
+            if pop.notes:
+                pop_rows.append(("Notes", pop.notes))
+            if phenotype.valid_date_start or phenotype.valid_date_end:
+                date_range = f"{phenotype.valid_date_start or 'any'} – {phenotype.valid_date_end or 'ongoing'}"
+                pop_rows.append(("Valid date range", date_range))
+            pop_table = "| Field | Value |\n|-------|-------|\n"
+            for field_name, value in pop_rows:
+                pop_table += f"| {field_name} | {value} |\n"
+            st.markdown(pop_table)
+
         with mcol2:
+            # Ontology terms
+            if phenotype.ontology_terms:
+                st.subheader("Ontology terms")
+                for term in phenotype.ontology_terms:
+                    primary_marker = " (primary)" if term.is_primary else ""
+                    st.markdown(f"- **{term.system}**: `{term.code}` — {term.label}{primary_marker}")
+
             st.subheader("Tags")
             tags_html = " ".join(
                 f'<span class="op-badge op-badge-blue">{tag}</span>'
                 for tag in phenotype.tags
             )
             st.markdown(tags_html, unsafe_allow_html=True)
+
+            # Core/use hierarchy (G)
+            if phenotype.is_core_definition and phenotype.child_use_ids:
+                st.subheader("Study-specific uses (derived)")
+                st.caption("Phenotypes derived from this core definition for specific studies.")
+                for child_id in phenotype.child_use_ids:
+                    child_p = get_phenotype_by_id(child_id)
+                    if child_p:
+                        if st.button(
+                            f"{child_p.name} ({child_p.short_name})",
+                            key=f"child_{child_id}",
+                        ):
+                            switch_to_detail(child_id)
+                            st.rerun()
+            elif not phenotype.is_core_definition and phenotype.parent_phenotype_id:
+                st.subheader("Parent core definition")
+                parent_p = get_phenotype_by_id(phenotype.parent_phenotype_id)
+                if parent_p:
+                    if st.button(
+                        f"{parent_p.name} ({parent_p.short_name})",
+                        key=f"parent_{phenotype.parent_phenotype_id}",
+                    ):
+                        switch_to_detail(phenotype.parent_phenotype_id)
+                        st.rerun()
 
             st.subheader("Related phenotypes")
             if phenotype.related_phenotype_ids:
@@ -733,6 +945,21 @@ def render_detail_view():
                         st.caption(f"`{rel_id}` (not in library)")
             else:
                 st.caption("No related phenotypes linked.")
+
+            # Dataset provenance (Table 1)
+            if phenotype.dataset_provenance:
+                st.subheader("Dataset provenance")
+                for dp in phenotype.dataset_provenance:
+                    dp_text = f"**{dp.dataset_name}**"
+                    if dp.dataset_identifier:
+                        dp_text += f" ({dp.dataset_identifier})"
+                    if dp.date_range_start and dp.date_range_end:
+                        dp_text += f" | {dp.date_range_start} – {dp.date_range_end}"
+                    if dp.population_size:
+                        dp_text += f" | N={dp.population_size:,}"
+                    st.markdown(dp_text)
+                    if dp.notes:
+                        st.caption(dp.notes)
 
     # ----- Data Sources -----
     with tab_sources:
@@ -756,6 +983,46 @@ def render_detail_view():
             st.markdown(
                 f"- **{cl.coding_system.value}** — {cl.code_count} codes (v{cl.version})"
             )
+
+    # ----- FAIR Compliance -----
+    with tab_fair:
+        st.subheader("FAIR metadata completeness")
+        st.caption(
+            "Assessment of metadata completeness against the BHF DSC FAIR "
+            "Phenotyping report Table 1 requirements."
+        )
+
+        st.plotly_chart(
+            create_fair_completeness_chart(phenotype),
+            use_container_width=True,
+        )
+
+        # Semantic validation results
+        st.subheader("Semantic validation")
+        issues = validate_phenotype(phenotype)
+        summary = validation_summary(issues)
+
+        if summary["passed"]:
+            st.success(
+                f"Phenotype passes validation. "
+                f"{summary['warnings']} warning(s), {summary['info']} info message(s)."
+            )
+        else:
+            st.error(
+                f"Phenotype has {summary['errors']} error(s) that must be resolved."
+            )
+
+        if issues:
+            for issue in issues:
+                icon = {"error": "!!!", "warning": "!", "info": "i"}.get(issue.severity, "?")
+                if issue.severity == "error":
+                    st.markdown(f"**[ERROR]** `{issue.field}`: {issue.message}")
+                elif issue.severity == "warning":
+                    st.markdown(f"**[WARNING]** `{issue.field}`: {issue.message}")
+                else:
+                    st.markdown(f"**[INFO]** `{issue.field}`: {issue.message}")
+                if issue.suggestion:
+                    st.caption(f"Suggestion: {issue.suggestion}")
 
     # ----- Download -----
     with tab_download:
@@ -784,11 +1051,14 @@ def render_detail_view():
                 key=f"dl_{cl.id}",
             )
 
-        # Full phenotype metadata download
+        # Full phenotype metadata download (FAIR-complete)
         st.divider()
-        st.subheader("Download phenotype metadata")
+        st.subheader("Download phenotype metadata (FAIR-complete)")
+        import json
         meta = {
             "id": phenotype.id,
+            "accession": phenotype.accession.accession if phenotype.accession.number > 0 else None,
+            "stable_url": phenotype.accession.stable_url if phenotype.accession.number > 0 else None,
             "name": phenotype.name,
             "short_name": phenotype.short_name,
             "type": phenotype.phenotype_type.value,
@@ -797,24 +1067,56 @@ def render_detail_view():
             "validation_status": phenotype.validation_status.value,
             "version": phenotype.version,
             "evidence_score": phenotype.evidence_score.overall,
+            "evidence_dimensions": phenotype.evidence_score.to_dict(),
             "total_codes": phenotype.total_codes,
             "coding_systems": [cs.value for cs in phenotype.coding_systems],
+            "ontology_terms": [
+                {"system": t.system, "code": t.code, "label": t.label, "is_primary": t.is_primary}
+                for t in phenotype.ontology_terms
+            ],
+            "population": {
+                "sex": phenotype.population.sex.value,
+                "age_min": phenotype.population.age_min,
+                "age_max": phenotype.population.age_max,
+                "inclusion_criteria": phenotype.population.inclusion_criteria,
+                "exclusion_criteria": phenotype.population.exclusion_criteria,
+            },
             "data_sources": phenotype.data_sources,
+            "dataset_provenance": [
+                {"name": dp.dataset_name, "identifier": dp.dataset_identifier,
+                 "date_range_start": dp.date_range_start.isoformat() if dp.date_range_start else None,
+                 "date_range_end": dp.date_range_end.isoformat() if dp.date_range_end else None,
+                 "population_size": dp.population_size}
+                for dp in phenotype.dataset_provenance
+            ],
             "authors": [
                 {"name": a.name, "institution": a.institution, "orcid": a.orcid}
                 for a in phenotype.authors
             ],
             "publications": [
-                {"title": pub.title, "doi": pub.doi, "journal": pub.journal, "year": pub.year}
+                {"title": pub.title, "doi": pub.doi, "journal": pub.journal,
+                 "year": pub.year, "is_primary": pub.is_primary}
                 for pub in phenotype.publications
             ],
+            "validations": [
+                {"method": v.method.value, "dataset": v.dataset,
+                 "ppv": v.ppv, "sensitivity": v.sensitivity,
+                 "specificity": v.specificity, "npv": v.npv,
+                 "sample_size": v.sample_size, "comparator": v.comparator}
+                for v in phenotype.validations
+            ],
             "methodology": phenotype.methodology,
+            "logic_description": phenotype.logic_description,
+            "source_code_url": phenotype.source_code_url,
             "created_date": phenotype.created_date.isoformat(),
             "updated_date": phenotype.updated_date.isoformat(),
             "source_repository": phenotype.source_repository,
+            "is_core_definition": phenotype.is_core_definition,
+            "parent_phenotype_id": phenotype.parent_phenotype_id,
+            "child_use_ids": phenotype.child_use_ids,
+            "related_phenotype_ids": phenotype.related_phenotype_ids,
             "tags": phenotype.tags,
         }
-        import json
         st.download_button(
             label="Download full metadata (JSON)",
             data=json.dumps(meta, indent=2),
@@ -822,6 +1124,75 @@ def render_detail_view():
             mime="application/json",
             key="dl_meta",
         )
+
+        # Algorithm bundle (zip of metadata + codelists + implementations)
+        st.divider()
+        st.subheader("Phenotype algorithm bundle")
+        st.caption(
+            "Download a complete bundle containing metadata JSON, all codelists "
+            "as CSV, and any reference implementations. Suitable for reproducible research."
+        )
+        import io
+        import zipfile
+        bundle_buf = io.BytesIO()
+        with zipfile.ZipFile(bundle_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Metadata
+            zf.writestr("metadata.json", json.dumps(meta, indent=2))
+            # Codelists
+            for cl in phenotype.codelists:
+                rows = []
+                for code in cl.codes:
+                    rows.append({
+                        "code": code.code,
+                        "term": code.term,
+                        "coding_system": code.coding_system.value,
+                        "included": code.is_included,
+                        "code_position": code.code_position.value,
+                    })
+                csv_df = pd.DataFrame(rows)
+                zf.writestr(f"codelists/{cl.id}.csv", csv_df.to_csv(index=False))
+            # Implementations
+            for i, impl in enumerate(phenotype.implementations):
+                ext = {"sql": "sql", "python": "py", "pseudocode": "txt"}.get(
+                    impl.language.lower(), "txt"
+                )
+                zf.writestr(f"implementations/{i+1}_{impl.language.lower()}.{ext}", impl.code)
+        bundle_buf.seek(0)
+        st.download_button(
+            label="Download algorithm bundle (.zip)",
+            data=bundle_buf.getvalue(),
+            file_name=f"{phenotype.id}_bundle.zip",
+            mime="application/zip",
+            key="dl_bundle",
+        )
+
+        # OMOP concept set export (if OMOP codelist exists)
+        omop_codelists = [cl for cl in phenotype.codelists if cl.coding_system == CodingSystem.OMOP]
+        if omop_codelists:
+            st.divider()
+            st.subheader("OMOP concept set export")
+            for cl in omop_codelists:
+                concept_set = {
+                    "name": phenotype.name,
+                    "id": phenotype.id,
+                    "expression": {
+                        "items": [
+                            {
+                                "concept": {"CONCEPT_ID": code.code, "CONCEPT_NAME": code.term},
+                                "isExcluded": not code.is_included,
+                                "includeDescendants": True,
+                            }
+                            for code in cl.codes
+                        ]
+                    }
+                }
+                st.download_button(
+                    label="Download OMOP concept set (JSON)",
+                    data=json.dumps(concept_set, indent=2),
+                    file_name=f"{phenotype.id}_omop_concept_set.json",
+                    mime="application/json",
+                    key=f"dl_omop_{cl.id}",
+                )
 
 
 # ===========================================================================

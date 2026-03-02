@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from .models import EvidenceScore, Phenotype, CodingSystem
+from .models import EvidenceScore, Phenotype, CodingSystem, ValidationEvidence
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +421,115 @@ def create_data_source_coverage(phenotypes: list[Phenotype]) -> go.Figure:
         yaxis=dict(autorange="reversed"),
         margin=dict(l=120, r=20, t=10, b=100),
         height=max(300, len(phenotypes) * 30),
+    )
+
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# New visualizations for FAIR-report fields
+# ---------------------------------------------------------------------------
+
+def create_validation_metrics_chart(validations: list[ValidationEvidence]) -> go.Figure:
+    """Grouped bar chart of validation metrics (PPV, sensitivity, specificity, etc.)."""
+    if not validations:
+        fig = go.Figure()
+        fig.update_layout(
+            annotations=[dict(text="No validation evidence", x=0.5, y=0.5,
+                              showarrow=False, font=dict(size=14, color=PALETTE["muted"]))],
+            height=200,
+        )
+        return fig
+
+    labels = []
+    ppvs = []
+    sensitivities = []
+    specificities = []
+    npvs = []
+
+    for v in validations:
+        label = f"{v.method.value}\n({v.dataset})"
+        labels.append(label)
+        ppvs.append((v.ppv or 0) * 100)
+        sensitivities.append((v.sensitivity or 0) * 100)
+        specificities.append((v.specificity or 0) * 100)
+        npvs.append((v.npv or 0) * 100)
+
+    fig = go.Figure()
+
+    metric_data = [
+        ("PPV", ppvs, PALETTE["primary"]),
+        ("Sensitivity", sensitivities, PALETTE["accent"]),
+        ("Specificity", specificities, PALETTE["secondary"]),
+        ("NPV", npvs, PALETTE["warning"]),
+    ]
+
+    for name, values, colour in metric_data:
+        if any(v > 0 for v in values):
+            fig.add_trace(go.Bar(
+                name=name,
+                x=labels,
+                y=values,
+                marker_color=colour,
+                text=[f"{v:.0f}%" if v > 0 else "" for v in values],
+                textposition="outside",
+            ))
+
+    fig.update_layout(
+        barmode="group",
+        yaxis=dict(range=[0, 110], title="Percentage", ticksuffix="%"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=50, r=20, t=40, b=80),
+        height=300,
+        plot_bgcolor="white",
+    )
+
+    return fig
+
+
+def create_fair_completeness_chart(phenotype: Phenotype) -> go.Figure:
+    """Show FAIR metadata completeness as a horizontal stacked bar."""
+    checks = {
+        "Accession ID": phenotype.accession.number > 0,
+        "Ontology terms": len(phenotype.ontology_terms) > 0,
+        "Population constraints": bool(phenotype.population.inclusion_criteria or phenotype.population.exclusion_criteria),
+        "Primary publication": phenotype.primary_publication is not None,
+        "Source code link": bool(phenotype.source_code_url),
+        "Validation evidence": len(phenotype.validations) > 0,
+        "Implementation": len(phenotype.implementations) > 0,
+        "Dummy data example": len(phenotype.dummy_data_examples) > 0,
+        "QC rules": len(phenotype.qc_rules) > 0,
+        "Clinical endorsement": len(phenotype.clinical_endorsements) > 0,
+        "Dataset provenance": len(phenotype.dataset_provenance) > 0,
+        "Logic description": bool(phenotype.logic_description),
+    }
+
+    labels = list(checks.keys())
+    present = [1 if v else 0 for v in checks.values()]
+    colours = [PALETTE["success"] if v else "#E0E0E0" for v in checks.values()]
+
+    fig = go.Figure(go.Bar(
+        y=labels,
+        x=present,
+        orientation="h",
+        marker_color=colours,
+        text=["Present" if v else "Missing" for v in checks.values()],
+        textposition="inside",
+        textfont=dict(color="white"),
+    ))
+
+    completeness = sum(checks.values()) / len(checks)
+
+    fig.update_layout(
+        xaxis=dict(range=[0, 1.2], showticklabels=False),
+        yaxis=dict(autorange="reversed"),
+        margin=dict(l=160, r=40, t=30, b=10),
+        height=max(300, len(checks) * 30),
+        plot_bgcolor="white",
+        title=dict(
+            text=f"FAIR completeness: {completeness:.0%}",
+            font=dict(size=13),
+        ),
     )
 
     return fig
