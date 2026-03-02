@@ -775,6 +775,8 @@ def render_detail_view():
                 if pub.year:
                     pub_text += f" ({pub.year})"
                 st.markdown(pub_text)
+                if pub.url:
+                    st.caption(f"URL: {pub.url}")
                 if pub.doi:
                     st.caption(f"DOI: {pub.doi}")
                 if pub.pubmed_id:
@@ -852,6 +854,20 @@ def render_detail_view():
             for field_name, value in id_rows:
                 id_table += f"| {field_name} | {value} |\n"
             st.markdown(id_table)
+
+            # Table 1 descriptive fields
+            descriptive_fields = [
+                ("Purpose", phenotype.purpose),
+                ("Developed for", phenotype.developed_for),
+                ("Used for", phenotype.used_for),
+                ("Limitations", phenotype.limitations),
+            ]
+            has_descriptive = any(v for _, v in descriptive_fields)
+            if has_descriptive:
+                st.subheader("Purpose & context")
+                for label, value in descriptive_fields:
+                    if value:
+                        st.markdown(f"**{label}:** {value}")
 
             st.subheader("Authors")
             for author in phenotype.authors:
@@ -1064,6 +1080,10 @@ def render_detail_view():
             "type": phenotype.phenotype_type.value,
             "therapeutic_area": phenotype.therapeutic_area.value,
             "description": phenotype.description,
+            "purpose": phenotype.purpose,
+            "developed_for": phenotype.developed_for,
+            "used_for": phenotype.used_for,
+            "limitations": phenotype.limitations,
             "validation_status": phenotype.validation_status.value,
             "version": phenotype.version,
             "evidence_score": phenotype.evidence_score.overall,
@@ -1095,7 +1115,7 @@ def render_detail_view():
             ],
             "publications": [
                 {"title": pub.title, "doi": pub.doi, "journal": pub.journal,
-                 "year": pub.year, "is_primary": pub.is_primary}
+                 "year": pub.year, "url": pub.url, "is_primary": pub.is_primary}
                 for pub in phenotype.publications
             ],
             "validations": [

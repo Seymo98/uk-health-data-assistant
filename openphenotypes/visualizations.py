@@ -494,6 +494,13 @@ def create_fair_completeness_chart(phenotype: Phenotype) -> go.Figure:
         "Ontology terms": len(phenotype.ontology_terms) > 0,
         "Population constraints": bool(phenotype.population.inclusion_criteria or phenotype.population.exclusion_criteria),
         "Primary publication": phenotype.primary_publication is not None,
+        "Publication link": bool(
+            phenotype.primary_publication
+            and (phenotype.primary_publication.url or phenotype.primary_publication.doi)
+        ),
+        "Purpose": bool(phenotype.purpose),
+        "Developed for": bool(phenotype.developed_for),
+        "Limitations": bool(phenotype.limitations),
         "Source code link": bool(phenotype.source_code_url),
         "Validation evidence": len(phenotype.validations) > 0,
         "Implementation": len(phenotype.implementations) > 0,

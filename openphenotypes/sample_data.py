@@ -155,6 +155,7 @@ t2dm = Phenotype(
             doi="10.1136/bmjopen-2020-example",
             journal="BMJ Open",
             year=2023,
+            url="https://bmjopen.bmj.com/content/example-t2dm",
             is_primary=True,
         ),
     ],
@@ -274,6 +275,25 @@ t2dm = Phenotype(
             applies_to="ICD-10 codelist",
         ),
     ],
+    purpose=(
+        "To identify patients with type 2 diabetes mellitus in UK electronic health "
+        "records for epidemiological research, outcome studies, and population health monitoring."
+    ),
+    developed_for=(
+        "Originally developed for the CALIBER programme to enable cardiovascular disease "
+        "research in linked primary–secondary care datasets (CPRD GOLD + HES)."
+    ),
+    used_for=(
+        "Reused in OpenSAFELY COVID-19 risk factor studies, UK Biobank diabetes "
+        "sub-studies, and HDR UK national phenotype library. Basis for derived "
+        "study-specific codelists (e.g. OP-0016)."
+    ),
+    limitations=(
+        "Code-based identification may under-ascertain T2DM in populations with low "
+        "primary care engagement. Does not distinguish well-controlled from poorly "
+        "controlled diabetes without supplementary HbA1c data. Read v2 codes are "
+        "legacy and may not be available in newer TPP/EMIS extracts."
+    ),
     methodology=(
         "Codes identified through literature review, clinical expert consensus, "
         "and cross-referencing with existing validated codelists (Cambridge, Exeter). "
@@ -368,6 +388,7 @@ hypertension = Phenotype(
             doi="10.1093/ije/example-htn",
             journal="International Journal of Epidemiology",
             year=2022,
+            url="https://academic.oup.com/ije/example-htn",
             is_primary=True,
         ),
     ],
@@ -399,6 +420,13 @@ hypertension = Phenotype(
         ),
     ],
     data_sources=["CPRD GOLD", "CPRD Aurum", "HES APC", "OpenSAFELY-TPP", "UK Biobank"],
+    purpose="To identify patients with essential hypertension for cardiovascular risk studies.",
+    developed_for="CALIBER programme cardiovascular disease research in linked GP and hospital data.",
+    used_for="CVD outcome studies, multimorbidity analyses, blood pressure treatment pathway research.",
+    limitations=(
+        "Relies on diagnostic codes; patients managed on BP-lowering drugs without a "
+        "coded hypertension diagnosis may be missed. Secondary hypertension explicitly excluded."
+    ),
     methodology=(
         "Codes curated from existing CALIBER phenotype algorithms with expert "
         "cardiology review. Validated using blood pressure measurements as gold "
@@ -490,6 +518,7 @@ depression = Phenotype(
             doi="10.1016/j.jad.2023.example",
             journal="Journal of Affective Disorders",
             year=2023,
+            url="https://doi.org/10.1016/j.jad.2023.example",
             is_primary=True,
         ),
         Publication(
@@ -589,6 +618,7 @@ asthma = Phenotype(
             doi="10.1136/thoraxjnl-2022-example",
             journal="Thorax",
             year=2022,
+            url="https://thorax.bmj.com/content/example-asthma",
             is_primary=True,
         ),
     ],
@@ -836,6 +866,7 @@ atrial_fibrillation = Phenotype(
             doi="10.1136/heartjnl-2021-example",
             journal="Heart",
             year=2021,
+            url="https://heart.bmj.com/content/example-af",
             is_primary=True,
         ),
     ],
@@ -938,6 +969,7 @@ stroke = Phenotype(
             doi="10.1136/jnnp-2022-example",
             journal="Journal of Neurology, Neurosurgery & Psychiatry",
             year=2022,
+            url="https://jnnp.bmj.com/content/example-stroke",
             is_primary=True,
         ),
     ],
@@ -1113,6 +1145,7 @@ covid19 = Phenotype(
             journal="Nature",
             year=2020,
             pubmed_id="32640463",
+            url="https://www.nature.com/articles/s41586-020-2521-4",
             is_primary=True,
         ),
     ],
@@ -1145,6 +1178,20 @@ covid19 = Phenotype(
             population_size=24000000,
         ),
     ],
+    purpose=(
+        "To identify COVID-19 cases (confirmed, suspected, and post-COVID syndrome) "
+        "in UK EHR for pandemic surveillance and risk factor research."
+    ),
+    developed_for="OpenSAFELY COVID-19 pandemic research programme (2020 onwards).",
+    used_for=(
+        "OpenSAFELY flagship studies (Nature 2020, Lancet 2021), ONS infection survey "
+        "linkage, ISARIC4C hospitalisation studies, Long COVID research."
+    ),
+    limitations=(
+        "Pre-2020 data has no COVID-19 codes (valid_date_start = 2020-01-01). Suspected "
+        "cases (U07.2) have lower specificity. Post-COVID syndrome coding only emerged "
+        "from late 2020; earlier long COVID may be under-captured."
+    ),
     methodology=(
         "Developed iteratively during the pandemic using SGSS positive test results "
         "as reference standard. Refined through multiple OpenSAFELY studies."
@@ -1565,6 +1612,7 @@ t2dm_opensafely_use = Phenotype(
             journal="Nature",
             year=2020,
             pubmed_id="32640463",
+            url="https://www.nature.com/articles/s41586-020-2521-4",
             is_primary=True,
         ),
     ],

@@ -157,6 +157,7 @@ class Publication:
     journal: Optional[str] = None
     year: Optional[int] = None
     pubmed_id: Optional[str] = None
+    url: Optional[str] = None    # Table 1: primary_publication_link (explicit URL)
     is_primary: bool = False  # True = the primary/defining publication
 
 
@@ -408,6 +409,12 @@ class Phenotype:
     qc_rules: list[QCRule] = field(default_factory=list)
     data_preprocessing: str = ""  # Dataset-specific guidance
 
+    # --- Table 1 descriptive fields (mandatory/recommended) ---
+    purpose: str = ""              # Table 1: why this phenotype was created
+    developed_for: str = ""        # Table 1: original study/context it was developed for
+    used_for: str = ""             # Table 1: studies/contexts where it has been reused
+    limitations: str = ""          # Table 1: known limitations and caveats
+
     # --- Provenance ---
     methodology: str = ""
     logic_description: str = ""  # Plain-English algorithm description
@@ -484,10 +491,40 @@ def validate_phenotype(p: Phenotype) -> list[ValidationIssue]:
         issues.append(ValidationIssue("error", "authors", "At least one author is required."))
     if not p.codelists:
         issues.append(ValidationIssue("error", "codelists", "At least one codelist is required."))
+
+    # --- Accession ID format check ---
+    if p.accession.number > 0:
+        accession_str = p.accession.accession
+        if not re.match(r"^OP-\d{4}\.v\d+\.\d+$", accession_str):
+            issues.append(ValidationIssue(
+                "error", "accession",
+                f"Accession '{accession_str}' does not match required format OP-nnnn.vX.X.",
+                "Use AccessionID(prefix='OP', number=N, version='X.Y').",
+            ))
+
+    # --- Primary ontology term check ---
     if not p.ontology_terms:
         issues.append(ValidationIssue("warning", "ontology_terms",
                                        "No ontology terms provided. Ontology terms improve discoverability.",
                                        "Add at least one SNOMED CT or ICD-10 ontology term."))
+    elif not any(t.is_primary for t in p.ontology_terms):
+        issues.append(ValidationIssue("warning", "ontology_terms",
+                                       "No primary ontology term flagged.",
+                                       "Mark at least one ontology term with is_primary=True."))
+
+    # --- Dataset provenance check ---
+    if not p.dataset_provenance:
+        issues.append(ValidationIssue("warning", "dataset_provenance",
+                                       "No dataset provenance record provided (Table 1 recommended).",
+                                       "Document the dataset(s) used to develop/validate this phenotype."))
+
+    # --- Primary publication link check ---
+    primary_pub = p.primary_publication
+    if primary_pub and not primary_pub.url and not primary_pub.doi:
+        issues.append(ValidationIssue("warning", "publications",
+                                       "Primary publication has no URL or DOI (Table 1: primary_publication_link).",
+                                       "Add a url or doi to the primary publication."))
+
     if not p.methodology.strip():
         issues.append(ValidationIssue("warning", "methodology",
                                        "No methodology description provided.",
