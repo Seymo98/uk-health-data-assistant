@@ -5,9 +5,10 @@ Includes realistic phenotype definitions spanning multiple therapeutic areas,
 coding systems, and validation statuses. Modelled on real-world codelists
 from OpenCodelists, HDR UK Phenotype Library, ClinicalCodes, and Keele HCDR.
 
-Enriched with FAIR-compliant metadata: accession IDs, ontology terms,
-population constraints, validation evidence, implementations, dummy data
-examples, QC rules, dataset provenance, and clinical endorsements.
+Updated to include full BHF DSC FAIR Table 1 metadata fields: accession IDs,
+ontology terms, population constraints, validation evidence, implementation
+artefacts, dummy data examples, QC rules, dataset provenance, and clinical
+endorsements.
 """
 
 from datetime import date
@@ -53,7 +54,7 @@ _AUTHORS = {
 }
 
 # ---------------------------------------------------------------------------
-# 1. Type 2 Diabetes
+# 1. Type 2 Diabetes (FLAGSHIP — full FAIR compliance)
 # ---------------------------------------------------------------------------
 
 _t2dm_snomed = Codelist(
@@ -63,6 +64,7 @@ _t2dm_snomed = Codelist(
     version="2.1",
     description="SNOMED CT codes for type 2 diabetes mellitus including subtypes.",
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("44054006", "Diabetes mellitus type 2", CodingSystem.SNOMED_CT),
         Code("313436004", "Type 2 diabetes mellitus without complication", CodingSystem.SNOMED_CT),
@@ -88,19 +90,20 @@ _t2dm_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="2.1",
     description="ICD-10 codes for type 2 diabetes mellitus.",
-    coding_system_version="ICD-10 5th Edition 2019",
+    coding_system_version="ICD-10 5th Edition 2016",
+    coding_system_release=date(2016, 1, 1),
     codes=[
-        Code("E11", "Type 2 diabetes mellitus", CodingSystem.ICD10),
-        Code("E11.0", "Type 2 DM with coma", CodingSystem.ICD10),
-        Code("E11.1", "Type 2 DM with ketoacidosis", CodingSystem.ICD10),
-        Code("E11.2", "Type 2 DM with kidney complications", CodingSystem.ICD10),
-        Code("E11.3", "Type 2 DM with ophthalmic complications", CodingSystem.ICD10),
-        Code("E11.4", "Type 2 DM with neurological complications", CodingSystem.ICD10),
-        Code("E11.5", "Type 2 DM with peripheral circulatory complications", CodingSystem.ICD10),
-        Code("E11.6", "Type 2 DM with other specified complications", CodingSystem.ICD10),
-        Code("E11.7", "Type 2 DM with multiple complications", CodingSystem.ICD10),
-        Code("E11.8", "Type 2 DM with unspecified complications", CodingSystem.ICD10),
-        Code("E11.9", "Type 2 DM without complications", CodingSystem.ICD10),
+        Code("E11", "Type 2 diabetes mellitus", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.0", "Type 2 DM with coma", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.1", "Type 2 DM with ketoacidosis", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.2", "Type 2 DM with kidney complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.3", "Type 2 DM with ophthalmic complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.4", "Type 2 DM with neurological complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.5", "Type 2 DM with peripheral circulatory complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.6", "Type 2 DM with other specified complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.7", "Type 2 DM with multiple complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.8", "Type 2 DM with unspecified complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("E11.9", "Type 2 DM without complications", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
     ],
 )
 
@@ -139,14 +142,15 @@ t2dm = Phenotype(
     accession=AccessionID(prefix="OP", number=1, version="2.1"),
     codelists=[_t2dm_snomed, _t2dm_icd10, _t2dm_read],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "44054006", "Diabetes mellitus type 2"),
-        OntologyTerm("ICD-10", "E11", "Type 2 diabetes mellitus", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="44054006", label="Diabetes mellitus type 2", is_primary=True),
+        OntologyTerm(system="ICD-10", code="E11", label="Type 2 diabetes mellitus"),
     ],
     population=PopulationConstraints(
         sex=Sex.BOTH,
         age_min=18,
-        inclusion_criteria="Registered in GP practice for >= 1 year",
-        exclusion_criteria="Type 1 diabetes, gestational diabetes, secondary diabetes",
+        inclusion_criteria="Adults aged 18+ registered with a GP practice in England",
+        exclusion_criteria="Type 1 diabetes, gestational diabetes, secondary diabetes, MODY",
+        notes="Paediatric T2DM rare; separate phenotype recommended for under-18s",
     ),
     authors=[_AUTHORS["hdruk"], _AUTHORS["bennett"]],
     publications=[
@@ -171,108 +175,126 @@ t2dm = Phenotype(
         ValidationEvidence(
             method=ValidationMethod.CHART_REVIEW,
             dataset="CPRD GOLD",
-            comparator="GP-confirmed diagnosis",
+            comparator="GP-confirmed diagnosis from clinical notes",
             ppv=0.92,
             sensitivity=0.88,
-            specificity=0.96,
+            specificity=0.97,
             sample_size=500,
             publication_doi="10.1136/bmjopen-2020-example",
+            notes="Random sample of 500 patients; reviewed by two clinicians",
+        ),
+        ValidationEvidence(
+            method=ValidationMethod.CROSS_DATABASE,
+            dataset="UK Biobank",
+            comparator="Self-reported diabetes + HbA1c >= 48 mmol/mol",
+            ppv=0.89,
+            sensitivity=0.91,
+            sample_size=5000,
+            notes="Cross-validated against UK Biobank adjudicated outcomes",
         ),
     ],
     clinical_endorsements=[
         ClinicalEndorsement(
-            reviewer_name="Dr James Peters",
-            reviewer_role="Consultant Diabetologist",
-            institution="King's College Hospital",
-            date=date(2023, 6, 15),
-            notes="Codes reviewed and approved. Recommended addition of HbA1c supporting evidence.",
+            reviewer_name="Prof. Naveed Sattar",
+            reviewer_role="Professor of Metabolic Medicine",
+            institution="University of Glasgow",
+            date=date(2024, 6, 15),
+            notes="Reviewed codelist completeness; endorsed for use in CVD outcome studies",
         ),
     ],
     data_sources=["CPRD GOLD", "CPRD Aurum", "OpenSAFELY-TPP", "HES APC", "SAIL", "UK Biobank"],
     dataset_provenance=[
         DatasetProvenance(
             dataset_name="CPRD GOLD March 2023",
-            dataset_identifier="cprd-gold-2023-03",
+            dataset_identifier="doi:10.1234/cprd-gold-2023-03",
             date_range_start=date(2000, 1, 1),
             date_range_end=date(2023, 3, 31),
             population_size=18000000,
+            notes="Used for primary validation study",
+        ),
+        DatasetProvenance(
+            dataset_name="OpenSAFELY-TPP February 2024",
+            dataset_identifier="opensafely-tpp-2024-02",
+            date_range_start=date(2019, 1, 1),
+            date_range_end=date(2024, 2, 29),
+            population_size=24000000,
+            notes="Used for prevalence estimation and code frequency analysis",
         ),
     ],
     implementations=[
         Implementation(
             language="SQL",
-            label="CPRD GOLD SQL query",
+            label="CPRD GOLD T2DM case identification query",
             code=(
-                "-- Type 2 Diabetes identification\n"
-                "SELECT DISTINCT p.patid\n"
-                "FROM patient p\n"
-                "JOIN clinical c ON p.patid = c.patid\n"
+                "SELECT DISTINCT patid\n"
+                "FROM clinical c\n"
                 "JOIN medical m ON c.medcode = m.medcode\n"
-                "WHERE m.readcode IN ('C10F.', 'C10F0', 'C10F1', 'C10F2',\n"
-                "  'C10F3', 'C10F4', 'C10F5', 'C10F6', 'C10F7',\n"
-                "  'C10FJ', 'C10FK')\n"
-                "  AND c.eventdate IS NOT NULL\n"
-                "-- Exclude Type 1 diabetes\n"
-                "EXCEPT\n"
-                "SELECT DISTINCT p.patid\n"
-                "FROM patient p\n"
-                "JOIN clinical c ON p.patid = c.patid\n"
-                "JOIN medical m ON c.medcode = m.medcode\n"
-                "WHERE m.readcode LIKE 'C10E%';"
+                "WHERE m.snomedctconceptid IN (\n"
+                "  '44054006', '313436004', '314902007',\n"
+                "  '314903002', '314904008'  -- etc.\n"
+                ")\n"
+                "AND c.eventdate IS NOT NULL;"
             ),
             dataset_target="CPRD GOLD",
-            source_url="https://github.com/opensafely/example-t2dm",
+            notes="Simplified example; production query includes date windows and exclusion logic",
         ),
         Implementation(
-            language="Pseudocode",
-            label="Algorithm pseudocode",
+            language="OpenSAFELY ehrQL",
+            label="OpenSAFELY ehrQL study definition (pseudocode)",
             code=(
-                "1. Identify patients with T2DM diagnostic codes (SNOMED/Read/ICD-10)\n"
-                "2. Exclude patients with ONLY T1DM codes\n"
-                "3. Exclude gestational diabetes codes\n"
-                "4. For incident cases: use earliest T2DM code date\n"
-                "5. For prevalent cases: any T2DM code before study start\n"
-                "6. Optional: require supporting evidence (HbA1c >= 48, OHA prescription)"
+                "from ehrql import create_dataset\n"
+                "from ehrql.tables.tpp import clinical_events\n"
+                "\n"
+                "t2dm_codes = codelist_from_csv('codelists/cl-t2dm-snomed.csv')\n"
+                "dataset = create_dataset()\n"
+                "dataset.define_population(\n"
+                "    clinical_events.where(\n"
+                "        clinical_events.snomedct_code.is_in(t2dm_codes)\n"
+                "    ).exists_for_patient()\n"
+                ")"
             ),
+            source_url="https://github.com/opensafely/example-t2dm",
+            dataset_target="OpenSAFELY-TPP",
+            notes="Pseudocode; actual study definitions use ehrQL v1",
         ),
     ],
     dummy_data_examples=[
         DummyDataExample(
-            description="T2DM identification from primary care records",
+            description="Correctly identified T2DM patient with primary care diagnosis",
             input_data=(
-                "patid,eventdate,medcode,readcode,readterm\n"
-                "1001,2020-03-15,med001,C10F.,Type 2 diabetes mellitus\n"
-                "1001,2020-06-01,med002,C10F7,Type 2 DM - poor control\n"
-                "1002,2019-11-20,med003,C10E.,Type 1 diabetes mellitus\n"
-                "1003,2021-01-10,med004,C10F6,Type 2 DM with retinopathy"
+                "patient_id,event_date,snomedct_code,term\n"
+                "1001,2018-03-14,44054006,Diabetes mellitus type 2\n"
+                "1001,2018-06-01,313835008,HbA1c level\n"
+                "1001,2019-01-10,325278007,Metformin 500mg tablets"
             ),
             expected_output=(
-                "patid,t2dm_date,t2dm_flag\n"
-                "1001,2020-03-15,1\n"
-                "1002,,0\n"
-                "1003,2021-01-10,1"
+                "patient_id,t2dm_case,first_diagnosis_date\n"
+                "1001,True,2018-03-14"
             ),
-            notes="Patient 1002 excluded (only T1DM codes)",
+            notes="Patient has a T2DM SNOMED code -> classified as case with earliest date",
         ),
     ],
     qc_rules=[
         QCRule(
-            rule_id="QC-T2DM-01",
-            description="Patient should not have both T1DM and T2DM without resolution",
+            rule_id="T2DM-QC-01",
+            description="Exclude patients with concurrent Type 1 diabetes codes recorded on the same date",
             severity="warning",
-            applies_to="All codelists",
+            applies_to="all",
+            automated=True,
         ),
         QCRule(
-            rule_id="QC-T2DM-02",
-            description="T2DM diagnosis date should be after patient birth date + 18 years",
-            severity="error",
-            applies_to="Date validation",
+            rule_id="T2DM-QC-02",
+            description="Flag patients aged under 18 at first T2DM code for manual review",
+            severity="warning",
+            applies_to="all",
+            automated=True,
         ),
         QCRule(
-            rule_id="QC-T2DM-03",
-            description="ICD-10 codes should use primary diagnosis position for incident T2DM",
+            rule_id="T2DM-QC-03",
+            description="ICD-10 codes should appear in primary diagnosis position for incident identification",
             severity="info",
             applies_to="ICD-10 codelist",
+            automated=True,
         ),
     ],
     purpose=(
@@ -281,7 +303,7 @@ t2dm = Phenotype(
     ),
     developed_for=(
         "Originally developed for the CALIBER programme to enable cardiovascular disease "
-        "research in linked primary–secondary care datasets (CPRD GOLD + HES)."
+        "research in linked primary-secondary care datasets (CPRD GOLD + HES)."
     ),
     used_for=(
         "Reused in OpenSAFELY COVID-19 risk factor studies, UK Biobank diabetes "
@@ -300,25 +322,26 @@ t2dm = Phenotype(
         "Validated against clinical notes in CPRD with PPV 92%, sensitivity 88%."
     ),
     logic_description=(
-        "Identify patients with at least one T2DM diagnostic code (SNOMED CT, Read v2, "
-        "or ICD-10) in their primary or secondary care record. Exclude patients whose "
-        "only diabetes codes are for type 1 diabetes, gestational diabetes, or secondary "
-        "diabetes. For incident T2DM, use the earliest qualifying code date. Optionally "
-        "require supporting evidence such as HbA1c >= 48 mmol/mol or oral hypoglycaemic "
-        "agent prescription."
+        "A patient is classified as having T2DM if they have at least one diagnostic "
+        "code from the SNOMED CT or Read v2 codelist recorded in primary care, OR an "
+        "ICD-10 E11.x code in the primary diagnosis position in HES APC. Patients with "
+        "a prior Type 1 diabetes code (E10.x / 46635009) are excluded unless the T2DM "
+        "code is recorded after age 35 and there is no insulin prescription within "
+        "6 months of the T1DM code."
     ),
     created_date=date(2022, 3, 15),
     updated_date=date(2024, 11, 1),
     version="2.1",
+    source_code_url="https://www.opencodelists.org/codelist/opensafely/type-2-diabetes/2024-04-01/",
     is_core_definition=True,
-    child_use_ids=["ph-t2dm-002"],
+    child_use_ids=["ph-t2dm-opensafely-use-001"],
     related_phenotype_ids=["ph-t1dm-001", "ph-hba1c-001", "ph-metformin-001"],
     source_repository="HDR UK Phenotype Library",
     tags=["diabetes", "endocrine", "metabolic", "primary care", "secondary care", "NCD"],
 )
 
 # ---------------------------------------------------------------------------
-# 2. Hypertension
+# 2. Hypertension (second-tier FAIR completeness)
 # ---------------------------------------------------------------------------
 
 _htn_snomed = Codelist(
@@ -328,6 +351,7 @@ _htn_snomed = Codelist(
     version="1.5",
     description="SNOMED CT codes for essential (primary) hypertension.",
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("59621000", "Essential hypertension", CodingSystem.SNOMED_CT),
         Code("38341003", "Hypertensive disorder", CodingSystem.SNOMED_CT),
@@ -346,14 +370,15 @@ _htn_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="1.5",
     description="ICD-10 codes for hypertensive diseases.",
-    coding_system_version="ICD-10 5th Edition 2019",
+    coding_system_version="ICD-10 5th Edition 2016",
+    coding_system_release=date(2016, 1, 1),
     codes=[
-        Code("I10", "Essential (primary) hypertension", CodingSystem.ICD10),
-        Code("I11", "Hypertensive heart disease", CodingSystem.ICD10),
-        Code("I11.0", "Hypertensive heart disease with heart failure", CodingSystem.ICD10),
-        Code("I11.9", "Hypertensive heart disease without heart failure", CodingSystem.ICD10),
-        Code("I12", "Hypertensive renal disease", CodingSystem.ICD10),
-        Code("I13", "Hypertensive heart and renal disease", CodingSystem.ICD10),
+        Code("I10", "Essential (primary) hypertension", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I11", "Hypertensive heart disease", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I11.0", "Hypertensive heart disease with heart failure", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I11.9", "Hypertensive heart disease without heart failure", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I12", "Hypertensive renal disease", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I13", "Hypertensive heart and renal disease", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
         Code("I15", "Secondary hypertension", CodingSystem.ICD10, is_included=False),
     ],
 )
@@ -372,14 +397,14 @@ hypertension = Phenotype(
     accession=AccessionID(prefix="OP", number=2, version="1.5"),
     codelists=[_htn_snomed, _htn_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "59621000", "Essential hypertension"),
-        OntologyTerm("ICD-10", "I10", "Essential (primary) hypertension", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="59621000", label="Essential hypertension", is_primary=True),
+        OntologyTerm(system="ICD-10", code="I10", label="Essential (primary) hypertension"),
     ],
     population=PopulationConstraints(
         sex=Sex.BOTH,
         age_min=18,
-        inclusion_criteria="Registered in GP practice for >= 1 year",
-        exclusion_criteria="Secondary hypertension, pregnancy-related hypertension",
+        inclusion_criteria="Adults aged 18+ with GP registration",
+        exclusion_criteria="Pregnancy-related hypertension (O10-O16), secondary hypertension (I15)",
     ),
     authors=[_AUTHORS["cambridge"], _AUTHORS["hdruk"]],
     publications=[
@@ -402,21 +427,23 @@ hypertension = Phenotype(
     ),
     validations=[
         ValidationEvidence(
-            method=ValidationMethod.CROSS_DATABASE,
-            dataset="CPRD GOLD + HES",
-            comparator="Blood pressure >= 140/90 on 2 occasions",
+            method=ValidationMethod.CHART_REVIEW,
+            dataset="CPRD GOLD",
+            comparator="Blood pressure readings >= 140/90 mmHg on two occasions",
             ppv=0.89,
             sensitivity=0.91,
-            sample_size=2000,
+            sample_size=400,
+            publication_doi="10.1093/ije/example-htn",
+            notes="Validated using BP measurement gold standard",
         ),
     ],
     clinical_endorsements=[
         ClinicalEndorsement(
-            reviewer_name="Prof Sarah Thompson",
-            reviewer_role="Consultant Cardiologist",
-            institution="University College London Hospitals",
-            date=date(2023, 9, 20),
-            notes="Codelist reviewed and endorsed for use in cardiovascular outcome studies.",
+            reviewer_name="Prof. Bryan Williams",
+            reviewer_role="Professor of Medicine / NICE Hypertension Guideline Chair",
+            institution="University College London",
+            date=date(2023, 11, 1),
+            notes="Codelist aligned with NICE NG136 hypertension guidelines",
         ),
     ],
     data_sources=["CPRD GOLD", "CPRD Aurum", "HES APC", "OpenSAFELY-TPP", "UK Biobank"],
@@ -435,6 +462,7 @@ hypertension = Phenotype(
     created_date=date(2021, 6, 10),
     updated_date=date(2024, 8, 20),
     version="1.5",
+    source_code_url="https://www.caliberresearch.org/portal/phenotypes/hypertension",
     related_phenotype_ids=["ph-chd-001", "ph-stroke-001", "ph-ckd-001"],
     source_repository="CALIBER / HDR UK",
     tags=["cardiovascular", "blood pressure", "NCD", "primary care", "CALIBER"],
@@ -451,6 +479,7 @@ _dep_snomed = Codelist(
     version="3.0",
     description="SNOMED CT codes for depressive disorders.",
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("35489007", "Depressive disorder", CodingSystem.SNOMED_CT),
         Code("386616008", "Major depressive disorder, single episode", CodingSystem.SNOMED_CT),
@@ -474,7 +503,8 @@ _dep_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="3.0",
     description="ICD-10 codes for depressive episodes and recurrent depression.",
-    coding_system_version="ICD-10 5th Edition 2019",
+    coding_system_version="ICD-10 5th Edition 2016",
+    coding_system_release=date(2016, 1, 1),
     codes=[
         Code("F32", "Depressive episode", CodingSystem.ICD10),
         Code("F32.0", "Mild depressive episode", CodingSystem.ICD10),
@@ -506,11 +536,16 @@ depression = Phenotype(
     accession=AccessionID(prefix="OP", number=3, version="3.0"),
     codelists=[_dep_snomed, _dep_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "35489007", "Depressive disorder"),
-        OntologyTerm("ICD-10", "F32", "Depressive episode", is_primary=False),
-        OntologyTerm("ICD-10", "F33", "Recurrent depressive disorder", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="35489007", label="Depressive disorder", is_primary=True),
+        OntologyTerm(system="ICD-10", code="F32", label="Depressive episode"),
+        OntologyTerm(system="ICD-10", code="F33", label="Recurrent depressive disorder"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=16,
+        inclusion_criteria="Individuals aged 16+ with GP registration",
+        exclusion_criteria="Bipolar affective disorder (F31), adjustment disorders (F43.2)",
+    ),
     authors=[_AUTHORS["manchester"], _AUTHORS["edinburgh"]],
     publications=[
         Publication(
@@ -518,7 +553,7 @@ depression = Phenotype(
             doi="10.1016/j.jad.2023.example",
             journal="Journal of Affective Disorders",
             year=2023,
-            url="https://doi.org/10.1016/j.jad.2023.example",
+            url="https://www.sciencedirect.com/journal/journal-of-affective-disorders",
             is_primary=True,
         ),
         Publication(
@@ -527,6 +562,14 @@ depression = Phenotype(
             year=2021,
         ),
     ],
+    purpose="To identify patients with depressive disorders for mental health research and service planning.",
+    developed_for="ClinicalCodes / University of Manchester common mental disorder studies in CPRD and SAIL.",
+    used_for="Prevalence studies, antidepressant prescribing research, multimorbidity analyses, NHS service evaluation.",
+    limitations=(
+        "Broad definition may include mild/transient episodes. Depression recording "
+        "varies by GP practice and over time. Does not distinguish severity without "
+        "additional clinical information."
+    ),
     validation_status=ValidationStatus.PEER_REVIEWED,
     evidence_score=EvidenceScore(
         literature=0.88,
@@ -559,7 +602,6 @@ _asthma_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="2.0",
     description="SNOMED CT codes for asthma diagnosis.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("195967001", "Asthma", CodingSystem.SNOMED_CT),
         Code("31387002", "Exercise-induced asthma", CodingSystem.SNOMED_CT),
@@ -582,7 +624,6 @@ _asthma_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="2.0",
     description="ICD-10 codes for asthma.",
-    coding_system_version="ICD-10 5th Edition 2019",
     codes=[
         Code("J45", "Asthma", CodingSystem.ICD10),
         Code("J45.0", "Predominantly allergic asthma", CodingSystem.ICD10),
@@ -607,10 +648,14 @@ asthma = Phenotype(
     accession=AccessionID(prefix="OP", number=4, version="2.0"),
     codelists=[_asthma_snomed, _asthma_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "195967001", "Asthma"),
-        OntologyTerm("ICD-10", "J45", "Asthma", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="195967001", label="Asthma", is_primary=True),
+        OntologyTerm(system="ICD-10", code="J45", label="Asthma"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        inclusion_criteria="All ages; includes childhood and adult-onset asthma",
+        exclusion_criteria="COPD-asthma overlap (ACO) should use separate composite phenotype",
+    ),
     authors=[_AUTHORS["bennett"], _AUTHORS["bristol"]],
     publications=[
         Publication(
@@ -622,6 +667,14 @@ asthma = Phenotype(
             is_primary=True,
         ),
     ],
+    purpose="To identify asthma patients for respiratory disease epidemiology and medication safety studies.",
+    developed_for="OpenSAFELY respiratory disease research and BTS/SIGN guideline compliance studies.",
+    used_for="Asthma prevalence estimation, inhaler prescribing analyses, COVID-19 risk group identification.",
+    limitations=(
+        "Code-based definition cannot distinguish active from historical asthma. "
+        "Overlap with COPD in older adults requires additional exclusion logic. "
+        "Severity classification requires medication data (not codes alone)."
+    ),
     validation_status=ValidationStatus.PUBLISHED,
     evidence_score=EvidenceScore(
         literature=0.85,
@@ -638,9 +691,9 @@ asthma = Phenotype(
     created_date=date(2020, 9, 1),
     updated_date=date(2024, 3, 10),
     version="2.0",
+    source_code_url="https://www.opencodelists.org/codelist/opensafely/asthma-diagnosis/",
     related_phenotype_ids=["ph-copd-001", "ph-ics-001"],
     source_repository="OpenCodelists",
-    source_code_url="https://www.opencodelists.org/codelist/opensafely/asthma-diagnosis/",
     tags=["respiratory", "asthma", "airways", "primary care", "OpenSAFELY"],
 )
 
@@ -654,7 +707,6 @@ _ckd_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.2",
     description="SNOMED CT codes for CKD stages 1-5.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("709044004", "Chronic kidney disease", CodingSystem.SNOMED_CT),
         Code("431855005", "Chronic kidney disease stage 1", CodingSystem.SNOMED_CT),
@@ -674,7 +726,6 @@ _ckd_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="1.2",
     description="ICD-10 codes for CKD.",
-    coding_system_version="ICD-10 5th Edition 2019",
     codes=[
         Code("N18", "Chronic kidney disease", CodingSystem.ICD10),
         Code("N18.1", "Chronic kidney disease, stage 1", CodingSystem.ICD10),
@@ -700,19 +751,32 @@ ckd = Phenotype(
     accession=AccessionID(prefix="OP", number=5, version="1.2"),
     codelists=[_ckd_snomed, _ckd_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "709044004", "Chronic kidney disease"),
-        OntologyTerm("ICD-10", "N18", "Chronic kidney disease", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="709044004", label="Chronic kidney disease", is_primary=True),
+        OntologyTerm(system="ICD-10", code="N18", label="Chronic kidney disease"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=18),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=18,
+        inclusion_criteria="Adults aged 18+ with GP registration",
+        exclusion_criteria="Acute kidney injury without chronicity markers",
+    ),
     authors=[_AUTHORS["cambridge"]],
     publications=[
         Publication(
             "CKD phenotyping in UK electronic health records",
             journal="Kidney International",
             year=2023,
+            url="https://www.kidney-international.org/example-ckd",
             is_primary=True,
         ),
     ],
+    purpose="To identify CKD patients by stage for renal disease epidemiology and cardiovascular risk studies.",
+    developed_for="CALIBER / HDR UK cardiorenal disease linkage studies.",
+    used_for="CKD prevalence estimation, cardiovascular comorbidity analyses, medication safety studies.",
+    limitations=(
+        "Code-only version does not incorporate eGFR values; combining with biomarker "
+        "data recommended for accurate staging. CKD stage 1-2 underrecorded in primary care."
+    ),
     validation_status=ValidationStatus.PEER_REVIEWED,
     evidence_score=EvidenceScore(
         literature=0.78,
@@ -744,7 +808,6 @@ _copd_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.4",
     description="SNOMED CT codes for chronic obstructive pulmonary disease.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("13645005", "Chronic obstructive pulmonary disease", CodingSystem.SNOMED_CT),
         Code("185086009", "Chronic obstructive bronchitis", CodingSystem.SNOMED_CT),
@@ -770,18 +833,31 @@ copd = Phenotype(
     accession=AccessionID(prefix="OP", number=6, version="1.4"),
     codelists=[_copd_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "13645005", "Chronic obstructive pulmonary disease"),
-        OntologyTerm("ICD-10", "J44", "Other chronic obstructive pulmonary disease", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="13645005", label="Chronic obstructive pulmonary disease", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=35),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=35,
+        inclusion_criteria="Adults aged 35+ (COPD rare below this age)",
+        exclusion_criteria="Asthma-only diagnoses without COPD code",
+    ),
     authors=[_AUTHORS["bennett"]],
     publications=[
         Publication(
             "COPD codelists for OpenSAFELY studies",
             year=2021,
+            url="https://www.opencodelists.org/codelist/opensafely/copd/",
             is_primary=True,
         ),
     ],
+    purpose="To identify COPD patients for respiratory disease research and shielding list studies.",
+    developed_for="OpenSAFELY COVID-19 shielding and respiratory vulnerability studies.",
+    used_for="COPD prevalence, COVID-19 risk group identification, exacerbation outcome studies.",
+    limitations=(
+        "Single coding system (SNOMED CT only); may miss cases recorded only in ICD-10 "
+        "secondary care data. Severity staging depends on spirometry, which is not "
+        "captured in code-based definitions alone."
+    ),
     validation_status=ValidationStatus.PUBLISHED,
     evidence_score=EvidenceScore(
         literature=0.82,
@@ -795,9 +871,9 @@ copd = Phenotype(
     created_date=date(2020, 5, 1),
     updated_date=date(2023, 12, 1),
     version="1.4",
+    source_code_url="https://www.opencodelists.org/codelist/opensafely/copd/",
     related_phenotype_ids=["ph-asthma-001"],
     source_repository="OpenCodelists",
-    source_code_url="https://www.opencodelists.org/codelist/opensafely/copd/",
     tags=["respiratory", "COPD", "emphysema", "OpenSAFELY"],
 )
 
@@ -812,6 +888,7 @@ _af_snomed = Codelist(
     version="2.0",
     description="SNOMED CT codes for atrial fibrillation and flutter.",
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("49436004", "Atrial fibrillation", CodingSystem.SNOMED_CT),
         Code("5370000", "Atrial flutter", CodingSystem.SNOMED_CT),
@@ -830,15 +907,16 @@ _af_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="2.0",
     description="ICD-10 codes for AF/flutter.",
-    coding_system_version="ICD-10 5th Edition 2019",
+    coding_system_version="ICD-10 5th Edition 2016",
+    coding_system_release=date(2016, 1, 1),
     codes=[
-        Code("I48", "Atrial fibrillation and flutter", CodingSystem.ICD10),
-        Code("I48.0", "Paroxysmal atrial fibrillation", CodingSystem.ICD10),
-        Code("I48.1", "Persistent atrial fibrillation", CodingSystem.ICD10),
-        Code("I48.2", "Chronic atrial fibrillation", CodingSystem.ICD10),
-        Code("I48.3", "Typical atrial flutter", CodingSystem.ICD10),
-        Code("I48.4", "Atypical atrial flutter", CodingSystem.ICD10),
-        Code("I48.9", "Atrial fibrillation and flutter, unspecified", CodingSystem.ICD10),
+        Code("I48", "Atrial fibrillation and flutter", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.0", "Paroxysmal atrial fibrillation", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.1", "Persistent atrial fibrillation", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.2", "Chronic atrial fibrillation", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.3", "Typical atrial flutter", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.4", "Atypical atrial flutter", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I48.9", "Atrial fibrillation and flutter, unspecified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
     ],
 )
 
@@ -855,10 +933,14 @@ atrial_fibrillation = Phenotype(
     accession=AccessionID(prefix="OP", number=7, version="2.0"),
     codelists=[_af_snomed, _af_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "49436004", "Atrial fibrillation"),
-        OntologyTerm("ICD-10", "I48", "Atrial fibrillation and flutter", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="49436004", label="Atrial fibrillation", is_primary=True),
+        OntologyTerm(system="ICD-10", code="I48", label="Atrial fibrillation and flutter"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=18),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=18,
+        inclusion_criteria="Adults aged 18+ with GP registration",
+    ),
     authors=[_AUTHORS["hdruk"], _AUTHORS["cambridge"]],
     publications=[
         Publication(
@@ -870,6 +952,14 @@ atrial_fibrillation = Phenotype(
             is_primary=True,
         ),
     ],
+    purpose="To identify AF patients for stroke risk prediction and anticoagulation research.",
+    developed_for="CALIBER programme cardiovascular disease phenotyping in linked GP and hospital data.",
+    used_for="Stroke risk stratification (CHA2DS2-VASc), anticoagulation prescribing studies, heart failure comorbidity analyses.",
+    limitations=(
+        "Cannot distinguish paroxysmal from persistent AF without ECG data. "
+        "PPV may be lower in younger populations where AF is rare. "
+        "Atrial flutter included — may need separation for some studies."
+    ),
     validation_status=ValidationStatus.VALIDATED,
     evidence_score=EvidenceScore(
         literature=0.92,
@@ -881,11 +971,13 @@ atrial_fibrillation = Phenotype(
     validations=[
         ValidationEvidence(
             method=ValidationMethod.REGISTRY_COMPARISON,
-            dataset="CPRD GOLD",
-            comparator="ECG-confirmed AF",
+            dataset="CPRD GOLD linked to HES",
+            comparator="ECG-confirmed AF in hospital records",
             ppv=0.95,
-            sensitivity=0.87,
-            sample_size=800,
+            sensitivity=0.82,
+            sample_size=350,
+            publication_doi="10.1136/heartjnl-2021-example",
+            notes="Validated against ECG-confirmed AF diagnoses in linked HES data",
         ),
     ],
     data_sources=["CPRD GOLD", "CPRD Aurum", "HES APC", "OpenSAFELY-TPP", "UK Biobank"],
@@ -896,6 +988,7 @@ atrial_fibrillation = Phenotype(
     created_date=date(2019, 8, 1),
     updated_date=date(2024, 5, 15),
     version="2.0",
+    source_code_url="https://www.caliberresearch.org/portal/phenotypes/af",
     related_phenotype_ids=["ph-stroke-001", "ph-htn-001"],
     source_repository="CALIBER / HDR UK",
     tags=["cardiovascular", "arrhythmia", "AF", "stroke risk", "CALIBER"],
@@ -911,7 +1004,6 @@ _stroke_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.8",
     description="SNOMED CT codes for ischaemic and haemorrhagic stroke.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("230690007", "Cerebrovascular accident", CodingSystem.SNOMED_CT),
         Code("422504002", "Ischaemic stroke", CodingSystem.SNOMED_CT),
@@ -930,16 +1022,15 @@ _stroke_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="1.8",
     description="ICD-10 codes for stroke (ischaemic and haemorrhagic).",
-    coding_system_version="ICD-10 5th Edition 2019",
     codes=[
-        Code("I60", "Subarachnoid haemorrhage", CodingSystem.ICD10),
-        Code("I61", "Intracerebral haemorrhage", CodingSystem.ICD10),
-        Code("I62", "Other nontraumatic intracranial haemorrhage", CodingSystem.ICD10),
-        Code("I63", "Cerebral infarction", CodingSystem.ICD10),
-        Code("I63.0", "Cerebral infarction due to thrombosis of precerebral arteries", CodingSystem.ICD10),
-        Code("I63.1", "Cerebral infarction due to embolism of precerebral arteries", CodingSystem.ICD10),
-        Code("I63.9", "Cerebral infarction, unspecified", CodingSystem.ICD10),
-        Code("I64", "Stroke, not specified as haemorrhage or infarction", CodingSystem.ICD10),
+        Code("I60", "Subarachnoid haemorrhage", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I61", "Intracerebral haemorrhage", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I62", "Other nontraumatic intracranial haemorrhage", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I63", "Cerebral infarction", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I63.0", "Cerebral infarction due to thrombosis of precerebral arteries", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I63.1", "Cerebral infarction due to embolism of precerebral arteries", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I63.9", "Cerebral infarction, unspecified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("I64", "Stroke, not specified as haemorrhage or infarction", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
         Code("G45", "Transient ischaemic attack", CodingSystem.ICD10, is_included=False),
     ],
 )
@@ -957,11 +1048,16 @@ stroke = Phenotype(
     accession=AccessionID(prefix="OP", number=8, version="1.8"),
     codelists=[_stroke_snomed, _stroke_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "230690007", "Cerebrovascular accident"),
-        OntologyTerm("ICD-10", "I63", "Cerebral infarction", is_primary=False),
-        OntologyTerm("ICD-10", "I61", "Intracerebral haemorrhage", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="230690007", label="Cerebrovascular accident", is_primary=True),
+        OntologyTerm(system="ICD-10", code="I63", label="Cerebral infarction"),
+        OntologyTerm(system="ICD-10", code="I61", label="Intracerebral haemorrhage"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=18),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=18,
+        inclusion_criteria="Adults aged 18+ with GP registration",
+        exclusion_criteria="TIA (transient ischaemic attack) — separate phenotype",
+    ),
     authors=[_AUTHORS["hdruk"], _AUTHORS["edinburgh"]],
     publications=[
         Publication(
@@ -973,6 +1069,14 @@ stroke = Phenotype(
             is_primary=True,
         ),
     ],
+    purpose="To identify ischaemic and haemorrhagic stroke events for cerebrovascular disease research.",
+    developed_for="CALIBER cerebrovascular phenotyping in linked primary and secondary care data.",
+    used_for="Stroke incidence/outcome studies, AF-stroke association analyses, anticoagulation effectiveness research.",
+    limitations=(
+        "TIA explicitly excluded — requires separate phenotype. Primary position ICD-10 "
+        "codes may miss strokes recorded as secondary diagnoses. Stroke subtype classification "
+        "(ischaemic vs haemorrhagic) depends on imaging, which is not captured in codes."
+    ),
     validation_status=ValidationStatus.VALIDATED,
     evidence_score=EvidenceScore(
         literature=0.90,
@@ -989,6 +1093,7 @@ stroke = Phenotype(
     created_date=date(2020, 2, 1),
     updated_date=date(2024, 9, 1),
     version="1.8",
+    source_code_url="https://www.caliberresearch.org/portal/phenotypes/stroke",
     related_phenotype_ids=["ph-af-001", "ph-htn-001"],
     source_repository="CALIBER / HDR UK",
     tags=["cardiovascular", "stroke", "cerebrovascular", "neurology", "CALIBER"],
@@ -1022,7 +1127,6 @@ _oa_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.0",
     description="SNOMED CT codes for osteoarthritis.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("396275006", "Osteoarthritis", CodingSystem.SNOMED_CT),
         Code("239872002", "Osteoarthritis of hip", CodingSystem.SNOMED_CT),
@@ -1047,19 +1151,31 @@ osteoarthritis = Phenotype(
     accession=AccessionID(prefix="OP", number=9, version="1.0"),
     codelists=[_oa_read, _oa_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "396275006", "Osteoarthritis"),
-        OntologyTerm("ICD-10", "M15-M19", "Arthrosis", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="396275006", label="Osteoarthritis", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=40),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=40,
+        inclusion_criteria="Adults aged 40+ consulting in primary care",
+        notes="OA incidence increases steeply after age 40",
+    ),
     authors=[_AUTHORS["keele"]],
     publications=[
         Publication(
             "Consultation incidence of osteoarthritis in UK primary care",
             journal="Osteoarthritis and Cartilage",
             year=2020,
+            url="https://www.oarsijournal.com/example-oa",
             is_primary=True,
         ),
     ],
+    purpose="To identify OA consultations in primary care for musculoskeletal disease epidemiology.",
+    developed_for="Keele Primary Care Centre Versus Arthritis musculoskeletal research programme.",
+    used_for="OA prevalence estimation, joint replacement pathway studies, pain management research.",
+    limitations=(
+        "Read v2 codes are legacy (pre-2018 GP systems). SNOMED CT mapping provided "
+        "but may not be complete for all subtypes. Does not capture radiographic severity."
+    ),
     validation_status=ValidationStatus.PUBLISHED,
     evidence_score=EvidenceScore(
         literature=0.80,
@@ -1082,7 +1198,7 @@ osteoarthritis = Phenotype(
 )
 
 # ---------------------------------------------------------------------------
-# 10. COVID-19
+# 10. COVID-19 (second-tier FAIR completeness)
 # ---------------------------------------------------------------------------
 
 _covid_snomed = Codelist(
@@ -1092,6 +1208,7 @@ _covid_snomed = Codelist(
     version="4.0",
     description="SNOMED CT codes for COVID-19 diagnosis and related conditions.",
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("840539006", "Disease caused by SARS-CoV-2", CodingSystem.SNOMED_CT),
         Code("840544004", "Suspected disease caused by SARS-CoV-2", CodingSystem.SNOMED_CT),
@@ -1110,12 +1227,13 @@ _covid_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="4.0",
     description="ICD-10 codes for COVID-19.",
-    coding_system_version="ICD-10 5th Edition 2019",
+    coding_system_version="ICD-10 5th Edition 2016 + WHO COVID-19 emergency codes",
+    coding_system_release=date(2020, 3, 25),
     codes=[
-        Code("U07.1", "COVID-19, virus identified", CodingSystem.ICD10),
-        Code("U07.2", "COVID-19, virus not identified", CodingSystem.ICD10),
-        Code("U09.9", "Post-COVID-19 condition, unspecified", CodingSystem.ICD10),
-        Code("U10.9", "Multisystem inflammatory syndrome associated with COVID-19", CodingSystem.ICD10),
+        Code("U07.1", "COVID-19, virus identified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("U07.2", "COVID-19, virus not identified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("U09.9", "Post-COVID-19 condition, unspecified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("U10.9", "Multisystem inflammatory syndrome associated with COVID-19", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
     ],
 )
 
@@ -1133,10 +1251,14 @@ covid19 = Phenotype(
     accession=AccessionID(prefix="OP", number=10, version="4.0"),
     codelists=[_covid_snomed, _covid_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "840539006", "Disease caused by SARS-CoV-2"),
-        OntologyTerm("ICD-10", "U07.1", "COVID-19, virus identified", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="840539006", label="Disease caused by SARS-CoV-2", is_primary=True),
+        OntologyTerm(system="ICD-10", code="U07.1", label="COVID-19, virus identified"),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        inclusion_criteria="All ages; applicable to any individual with suspected or confirmed SARS-CoV-2 infection",
+        notes="Phenotype only applicable from March 2020 onwards (see valid_date_start)",
+    ),
     authors=[_AUTHORS["bennett"], _AUTHORS["hdruk"]],
     publications=[
         Publication(
@@ -1149,6 +1271,14 @@ covid19 = Phenotype(
             is_primary=True,
         ),
     ],
+    purpose="To identify COVID-19 cases for pandemic research including mortality, vaccine effectiveness, and long COVID studies.",
+    developed_for="OpenSAFELY pandemic research programme; used in >100 studies during 2020-2024.",
+    used_for="COVID-19 mortality analyses, vaccine effectiveness studies, long COVID identification, shielding patient research.",
+    limitations=(
+        "Dependent on testing availability (limited early pandemic). Suspected cases "
+        "(U07.2) have lower specificity. Post-COVID syndrome codes only available from "
+        "late 2020. Lateral flow test results not consistently captured."
+    ),
     validation_status=ValidationStatus.VALIDATED,
     evidence_score=EvidenceScore(
         literature=0.98,
@@ -1160,56 +1290,69 @@ covid19 = Phenotype(
     validations=[
         ValidationEvidence(
             method=ValidationMethod.LAB_CONFIRMATION,
-            dataset="OpenSAFELY-TPP",
-            comparator="SGSS positive test",
-            ppv=0.95,
-            sensitivity=0.91,
+            dataset="OpenSAFELY-TPP linked to SGSS",
+            comparator="SGSS PCR-positive test result",
+            ppv=0.97,
+            sensitivity=0.85,
             specificity=0.99,
             sample_size=10000,
+            publication_doi="10.1038/s41586-020-2521-4",
+            notes="Validated against SGSS positive test results during first wave",
         ),
     ],
     data_sources=["OpenSAFELY-TPP", "OpenSAFELY-EMIS", "HES APC", "CPRD Aurum", "ONS"],
     dataset_provenance=[
         DatasetProvenance(
-            dataset_name="OpenSAFELY-TPP",
-            dataset_identifier="opensafely-tpp-2023",
+            dataset_name="OpenSAFELY-TPP March 2020 - December 2023",
+            dataset_identifier="opensafely-tpp-covid-cohort",
             date_range_start=date(2020, 1, 1),
             date_range_end=date(2023, 12, 31),
             population_size=24000000,
+            notes="Primary dataset for all OpenSAFELY COVID-19 studies",
         ),
     ],
-    purpose=(
-        "To identify COVID-19 cases (confirmed, suspected, and post-COVID syndrome) "
-        "in UK EHR for pandemic surveillance and risk factor research."
-    ),
-    developed_for="OpenSAFELY COVID-19 pandemic research programme (2020 onwards).",
-    used_for=(
-        "OpenSAFELY flagship studies (Nature 2020, Lancet 2021), ONS infection survey "
-        "linkage, ISARIC4C hospitalisation studies, Long COVID research."
-    ),
-    limitations=(
-        "Pre-2020 data has no COVID-19 codes (valid_date_start = 2020-01-01). Suspected "
-        "cases (U07.2) have lower specificity. Post-COVID syndrome coding only emerged "
-        "from late 2020; earlier long COVID may be under-captured."
-    ),
+    implementations=[
+        Implementation(
+            language="OpenSAFELY ehrQL",
+            label="OpenSAFELY COVID-19 case identification",
+            code=(
+                "from ehrql import create_dataset\n"
+                "from ehrql.tables.tpp import clinical_events, sgss_covid_all_tests\n"
+                "\n"
+                "covid_codes = codelist_from_csv('codelists/cl-covid-snomed.csv')\n"
+                "dataset = create_dataset()\n"
+                "dataset.define_population(\n"
+                "    clinical_events.where(\n"
+                "        clinical_events.snomedct_code.is_in(covid_codes)\n"
+                "    ).exists_for_patient()\n"
+                "    | sgss_covid_all_tests.where(\n"
+                "        sgss_covid_all_tests.is_positive\n"
+                "    ).exists_for_patient()\n"
+                ")"
+            ),
+            source_url="https://github.com/opensafely/covid-vaccine-effectiveness",
+            dataset_target="OpenSAFELY-TPP",
+            notes="Combines SNOMED codes with SGSS test results",
+        ),
+    ],
     methodology=(
         "Developed iteratively during the pandemic using SGSS positive test results "
         "as reference standard. Refined through multiple OpenSAFELY studies."
     ),
     logic_description=(
-        "Identify patients with a COVID-19 diagnostic code (SNOMED CT or ICD-10) "
-        "in primary care, secondary care, or SGSS test results. Confirmed cases "
-        "require a U07.1 code or SNOMED lab-confirmed code. Suspected cases use "
-        "U07.2 or clinical diagnostic criteria codes. Post-COVID syndrome identified "
-        "separately via U09.9 or SNOMED post-COVID code."
+        "A patient is classified as having COVID-19 if they have: (1) a SNOMED CT "
+        "code for confirmed/suspected COVID-19 in primary care, OR (2) a positive "
+        "SARS-CoV-2 PCR or lateral flow test in SGSS, OR (3) an ICD-10 U07.1/U07.2 "
+        "code in HES APC. Post-COVID syndrome (U09.9 / 1325181000000106) is captured "
+        "as a separate flag. Date of onset is the earliest of clinical code or positive test."
     ),
     created_date=date(2020, 3, 15),
     updated_date=date(2024, 1, 10),
     version="4.0",
+    source_code_url="https://www.opencodelists.org/codelist/opensafely/covid-identification/",
     valid_date_start=date(2020, 1, 1),
     related_phenotype_ids=[],
     source_repository="OpenCodelists",
-    source_code_url="https://www.opencodelists.org/codelist/opensafely/covid-identification/",
     tags=["infectious disease", "COVID-19", "pandemic", "respiratory", "OpenSAFELY"],
 )
 
@@ -1223,7 +1366,6 @@ _brca_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.3",
     description="SNOMED CT codes for breast cancer diagnosis.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("254837009", "Malignant neoplasm of breast", CodingSystem.SNOMED_CT),
         Code("188166003", "Carcinoma in situ of breast", CodingSystem.SNOMED_CT),
@@ -1240,18 +1382,17 @@ _brca_icd10 = Codelist(
     coding_system=CodingSystem.ICD10,
     version="1.3",
     description="ICD-10 codes for breast cancer.",
-    coding_system_version="ICD-10 5th Edition 2019",
     codes=[
-        Code("C50", "Malignant neoplasm of breast", CodingSystem.ICD10),
-        Code("C50.0", "Nipple and areola", CodingSystem.ICD10),
-        Code("C50.1", "Central portion of breast", CodingSystem.ICD10),
-        Code("C50.2", "Upper-inner quadrant of breast", CodingSystem.ICD10),
-        Code("C50.3", "Lower-inner quadrant of breast", CodingSystem.ICD10),
-        Code("C50.4", "Upper-outer quadrant of breast", CodingSystem.ICD10),
-        Code("C50.5", "Lower-outer quadrant of breast", CodingSystem.ICD10),
-        Code("C50.8", "Overlapping lesion of breast", CodingSystem.ICD10),
-        Code("C50.9", "Breast, unspecified", CodingSystem.ICD10),
-        Code("D05", "Carcinoma in situ of breast", CodingSystem.ICD10),
+        Code("C50", "Malignant neoplasm of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.0", "Nipple and areola", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.1", "Central portion of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.2", "Upper-inner quadrant of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.3", "Lower-inner quadrant of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.4", "Upper-outer quadrant of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.5", "Lower-outer quadrant of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.8", "Overlapping lesion of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("C50.9", "Breast, unspecified", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
+        Code("D05", "Carcinoma in situ of breast", CodingSystem.ICD10, code_position=CodePosition.PRIMARY),
     ],
 )
 
@@ -1268,19 +1409,33 @@ breast_cancer = Phenotype(
     accession=AccessionID(prefix="OP", number=11, version="1.3"),
     codelists=[_brca_snomed, _brca_icd10],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "254837009", "Malignant neoplasm of breast"),
-        OntologyTerm("ICD-10", "C50", "Malignant neoplasm of breast", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="254837009", label="Malignant neoplasm of breast", is_primary=True),
+        OntologyTerm(system="ICD-10", code="C50", label="Malignant neoplasm of breast"),
     ],
-    population=PopulationConstraints(sex=Sex.FEMALE),
+    population=PopulationConstraints(
+        sex=Sex.FEMALE,
+        age_min=18,
+        inclusion_criteria="Females aged 18+; male breast cancer uses a separate phenotype",
+        exclusion_criteria="Benign breast neoplasms, phyllodes tumours",
+        notes="Male breast cancer (<1% of cases) excluded for population specificity",
+    ),
     authors=[_AUTHORS["edinburgh"]],
     publications=[
         Publication(
             "Cancer registration phenotypes for UK Biobank studies",
             journal="British Journal of Cancer",
             year=2023,
+            url="https://www.nature.com/bjc/example-brca",
             is_primary=True,
         ),
     ],
+    purpose="To identify breast cancer cases for cancer epidemiology and outcomes research.",
+    developed_for="UK Biobank cancer phenotyping linked to national cancer registry data.",
+    used_for="Cancer incidence studies, screening effectiveness analyses, survival outcome research.",
+    limitations=(
+        "Excludes male breast cancer (<1% of cases). Carcinoma in situ included — may need "
+        "separation for invasive-only analyses. Histological subtype requires registry linkage."
+    ),
     validation_status=ValidationStatus.PEER_REVIEWED,
     evidence_score=EvidenceScore(
         literature=0.85,
@@ -1350,12 +1505,22 @@ metformin = Phenotype(
     accession=AccessionID(prefix="OP", number=12, version="1.1"),
     codelists=[_metformin_dmd, _metformin_bnf],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "109081006", "Metformin"),
-        OntologyTerm("BNF", "0601022B0", "Metformin hydrochloride", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="109081006", label="Metformin", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=18),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=18,
+        inclusion_criteria="Adults with active GP prescriptions",
+    ),
     authors=[_AUTHORS["bennett"]],
     publications=[],
+    purpose="To identify metformin prescribing for diabetes medication utilisation and safety research.",
+    developed_for="OpenSAFELY medication codelist programme for pharmacoepidemiological studies.",
+    used_for="Prescribing prevalence studies, medication adherence research, T2DM treatment pathway analyses.",
+    limitations=(
+        "Captures prescriptions issued, not dispensed or taken. Combination products may "
+        "lead to double-counting if not handled. Hospital prescribing not captured in primary care data."
+    ),
     validation_status=ValidationStatus.PUBLISHED,
     evidence_score=EvidenceScore(
         literature=0.70,
@@ -1369,9 +1534,9 @@ metformin = Phenotype(
     created_date=date(2020, 6, 1),
     updated_date=date(2024, 7, 1),
     version="1.1",
+    source_code_url="https://www.opencodelists.org/codelist/opensafely/metformin/",
     related_phenotype_ids=["ph-t2dm-001"],
     source_repository="OpenCodelists",
-    source_code_url="https://www.opencodelists.org/codelist/opensafely/metformin/",
     tags=["medication", "diabetes", "metformin", "prescribing", "OpenSAFELY"],
 )
 
@@ -1385,7 +1550,6 @@ _hba1c_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.0",
     description="SNOMED CT codes for HbA1c laboratory measurements.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("43396009", "Haemoglobin A1c measurement", CodingSystem.SNOMED_CT),
         Code("313835008", "HbA1c level", CodingSystem.SNOMED_CT),
@@ -1407,11 +1571,21 @@ hba1c = Phenotype(
     accession=AccessionID(prefix="OP", number=13, version="1.0"),
     codelists=[_hba1c_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "43396009", "Haemoglobin A1c measurement"),
+        OntologyTerm(system="SNOMED CT", code="43396009", label="Haemoglobin A1c measurement", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        inclusion_criteria="Any patient with HbA1c test recorded",
+    ),
     authors=[_AUTHORS["hdruk"]],
     publications=[],
+    purpose="To capture HbA1c laboratory measurements for glycaemic control monitoring in diabetes research.",
+    developed_for="HDR UK Phenotype Library biomarker phenotyping programme.",
+    used_for="Diabetes control assessment, treatment effectiveness studies, risk stratification research.",
+    limitations=(
+        "Captures test ordering/results, not clinical interpretation. DCCT and IFCC units "
+        "must be standardised before analysis. Missing values common in early EHR data."
+    ),
     validation_status=ValidationStatus.UNDER_REVIEW,
     evidence_score=EvidenceScore(
         literature=0.65,
@@ -1440,7 +1614,6 @@ _dementia_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="2.2",
     description="SNOMED CT codes for all-cause dementia including subtypes.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("52448006", "Dementia", CodingSystem.SNOMED_CT),
         Code("26929004", "Alzheimer's disease", CodingSystem.SNOMED_CT),
@@ -1468,19 +1641,32 @@ dementia = Phenotype(
     accession=AccessionID(prefix="OP", number=14, version="2.2"),
     codelists=[_dementia_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "52448006", "Dementia"),
-        OntologyTerm("ICD-10", "F00-F03", "Dementia", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="52448006", label="Dementia", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.BOTH, age_min=40),
+    population=PopulationConstraints(
+        sex=Sex.BOTH,
+        age_min=40,
+        inclusion_criteria="Adults aged 40+; early-onset dementia included",
+        notes="95% of dementia cases are aged 65+; younger cases should be flagged for review",
+    ),
     authors=[_AUTHORS["edinburgh"], _AUTHORS["manchester"]],
     publications=[
         Publication(
             "Dementia diagnosis in UK electronic health records",
             journal="Alzheimer's & Dementia",
             year=2024,
+            url="https://alz-journals.onlinelibrary.wiley.com/example-dementia",
             is_primary=True,
         ),
     ],
+    purpose="To identify all-cause dementia for neurodegenerative disease epidemiology and care pathway research.",
+    developed_for="ClinicalCodes / University of Manchester dementia research programme.",
+    used_for="Dementia prevalence estimation, comorbidity analyses, care home research, drug safety studies.",
+    limitations=(
+        "Broad definition includes all subtypes — subtype-specific analyses require "
+        "related phenotypes. Dementia underrecorded in primary care (estimated 30-40% "
+        "undiagnosed). Onset date difficult to determine from diagnostic codes alone."
+    ),
     validation_status=ValidationStatus.PEER_REVIEWED,
     evidence_score=EvidenceScore(
         literature=0.88,
@@ -1512,7 +1698,6 @@ _pregnancy_snomed = Codelist(
     coding_system=CodingSystem.SNOMED_CT,
     version="1.0",
     description="SNOMED CT codes for pregnancy identification.",
-    coding_system_version="SNOMED CT UK Edition 2024-04-01",
     codes=[
         Code("77386006", "Pregnant", CodingSystem.SNOMED_CT),
         Code("72892002", "Normal pregnancy", CodingSystem.SNOMED_CT),
@@ -1537,12 +1722,25 @@ pregnancy = Phenotype(
     accession=AccessionID(prefix="OP", number=15, version="1.0"),
     codelists=[_pregnancy_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "77386006", "Pregnant"),
-        OntologyTerm("ICD-10", "O00-O99", "Pregnancy, childbirth and the puerperium", is_primary=False),
+        OntologyTerm(system="SNOMED CT", code="77386006", label="Pregnant", is_primary=True),
     ],
-    population=PopulationConstraints(sex=Sex.FEMALE, age_min=12, age_max=55),
+    population=PopulationConstraints(
+        sex=Sex.FEMALE,
+        age_min=12,
+        age_max=55,
+        inclusion_criteria="Females of reproductive age (12-55)",
+        notes="Age range covers the biologically plausible fertility window",
+    ),
     authors=[_AUTHORS["cambridge"]],
     publications=[],
+    purpose="To identify pregnancy episodes for maternal health research and drug safety studies.",
+    developed_for="Initial development for maternal medication safety studies in CPRD.",
+    used_for="Pregnancy identification for covariate adjustment, medication safety in pregnancy, birth outcome studies.",
+    limitations=(
+        "Draft status — awaiting clinical review. Pregnancy episode boundaries "
+        "(start/end dates) require additional algorithm logic beyond diagnosis codes. "
+        "Early pregnancy losses may not be captured."
+    ),
     validation_status=ValidationStatus.DRAFT,
     evidence_score=EvidenceScore(
         literature=0.60,
@@ -1562,83 +1760,94 @@ pregnancy = Phenotype(
 )
 
 # ---------------------------------------------------------------------------
-# 16. T2DM (OpenSAFELY COVID study use) — child/study-use phenotype
+# 16. T2DM OpenSAFELY Study-Use (child of T2DM core definition)
 # ---------------------------------------------------------------------------
 
 _t2dm_opensafely_snomed = Codelist(
     id="cl-t2dm-opensafely-snomed",
-    name="Type 2 diabetes mellitus - OpenSAFELY (SNOMED CT)",
+    name="Type 2 diabetes mellitus — OpenSAFELY simplified (SNOMED CT)",
     coding_system=CodingSystem.SNOMED_CT,
     version="1.0",
-    description="Simplified SNOMED CT T2DM codelist used in OpenSAFELY COVID-19 studies.",
+    description=(
+        "Simplified SNOMED CT codelist for T2DM used in OpenSAFELY CVD outcome "
+        "studies. Subset of the core T2DM phenotype focusing on high-specificity "
+        "diagnostic codes only (excludes complication-only codes)."
+    ),
     coding_system_version="SNOMED CT UK Edition 2024-04-01",
+    coding_system_release=date(2024, 4, 1),
     codes=[
         Code("44054006", "Diabetes mellitus type 2", CodingSystem.SNOMED_CT),
         Code("313436004", "Type 2 diabetes mellitus without complication", CodingSystem.SNOMED_CT),
-        Code("422034002", "Diabetic retinopathy associated with type II diabetes mellitus", CodingSystem.SNOMED_CT),
         Code("421750000", "Ketoacidosis in type II diabetes mellitus", CodingSystem.SNOMED_CT),
-        Code("420279001", "Renal disorder associated with type II diabetes mellitus", CodingSystem.SNOMED_CT),
-        Code("421326000", "Disorder of nervous system associated with type II diabetes mellitus", CodingSystem.SNOMED_CT),
     ],
 )
 
 t2dm_opensafely_use = Phenotype(
-    id="ph-t2dm-002",
-    name="T2DM (OpenSAFELY COVID study use)",
-    short_name="T2DM-OpenSAFELY",
+    id="ph-t2dm-opensafely-use-001",
+    name="Type 2 Diabetes Mellitus — OpenSAFELY CVD Study Use",
+    short_name="T2DM (OpenSAFELY)",
     phenotype_type=PhenotypeType.DISEASE,
     therapeutic_area=TherapeuticArea.DIABETES_ENDOCRINE,
     description=(
-        "Study-use derivation of the core T2DM phenotype, simplified for use in "
-        "OpenSAFELY COVID-19 risk factor studies. Uses a reduced SNOMED CT codelist "
-        "targeting TPP-based primary care records only."
+        "Study-specific adaptation of the core T2DM phenotype (OP-0001) for "
+        "use in OpenSAFELY cardiovascular outcome studies. Uses a simplified "
+        "SNOMED CT codelist focusing on high-specificity diagnostic codes to "
+        "minimise misclassification in the context of CVD risk analysis."
     ),
     accession=AccessionID(prefix="OP", number=16, version="1.0"),
     codelists=[_t2dm_opensafely_snomed],
     ontology_terms=[
-        OntologyTerm("SNOMED CT", "44054006", "Diabetes mellitus type 2"),
+        OntologyTerm(system="SNOMED CT", code="44054006", label="Diabetes mellitus type 2", is_primary=True),
     ],
     population=PopulationConstraints(
         sex=Sex.BOTH,
         age_min=18,
-        inclusion_criteria="Registered in TPP practice",
-        exclusion_criteria="Type 1 diabetes",
+        inclusion_criteria="Adults aged 18+ registered with an OpenSAFELY-TPP practice",
+        exclusion_criteria="Type 1 diabetes, gestational diabetes, secondary diabetes",
+        notes="Narrower codelist than core; prioritises specificity for CVD outcome studies",
     ),
     authors=[_AUTHORS["bennett"]],
     publications=[
         Publication(
-            "Factors associated with COVID-19-related death using OpenSAFELY",
-            doi="10.1038/s41586-020-2521-4",
-            journal="Nature",
-            year=2020,
-            pubmed_id="32640463",
-            url="https://www.nature.com/articles/s41586-020-2521-4",
+            "Cardiovascular outcomes in type 2 diabetes: an OpenSAFELY cohort study",
+            doi="10.1016/j.landig-2024-example",
+            journal="The Lancet Digital Health",
+            year=2024,
+            url="https://www.thelancet.com/journals/landig/example-t2dm-cvd",
             is_primary=True,
         ),
     ],
+    purpose="To identify T2DM patients with high specificity for CVD outcome analyses in OpenSAFELY.",
+    developed_for="OpenSAFELY cardiovascular outcomes in type 2 diabetes cohort study.",
+    used_for="CVD risk analysis in T2DM, medication effectiveness studies within OpenSAFELY-TPP.",
+    limitations=(
+        "Narrower codelist than core T2DM definition — trades sensitivity for specificity. "
+        "Only validated in OpenSAFELY-TPP population; transferability to other datasets "
+        "not yet assessed. Does not capture T2DM complications."
+    ),
     validation_status=ValidationStatus.PUBLISHED,
     evidence_score=EvidenceScore(
-        literature=0.90,
-        clinical_review=0.80,
-        validation=0.75,
-        usage=0.95,
-        provenance=0.85,
+        literature=0.80,
+        clinical_review=0.75,
+        validation=0.70,
+        usage=0.85,
+        provenance=0.80,
     ),
     data_sources=["OpenSAFELY-TPP"],
     methodology=(
-        "Derived from the core T2DM phenotype (OP-0001) with a reduced SNOMED CT "
-        "codelist for use in OpenSAFELY COVID-19 studies. Validated within the "
-        "OpenSAFELY-TPP population."
+        "Derived from core T2DM phenotype (OP-0001) by selecting high-specificity "
+        "SNOMED CT codes only. Complication codes excluded to reduce false positives "
+        "in CVD outcome analyses. Validated within the OpenSAFELY-TPP population."
     ),
-    created_date=date(2020, 5, 1),
-    updated_date=date(2023, 6, 1),
+    created_date=date(2024, 6, 1),
+    updated_date=date(2024, 11, 1),
     version="1.0",
+    source_code_url="https://github.com/opensafely/t2dm-cvd-outcomes",
     is_core_definition=False,
     parent_phenotype_id="ph-t2dm-001",
-    related_phenotype_ids=["ph-t2dm-001"],
-    source_repository="OpenCodelists",
-    source_code_url="https://www.opencodelists.org/codelist/opensafely/diabetes-type2/",
-    tags=["diabetes", "T2DM", "OpenSAFELY", "COVID-19", "study-use"],
+    related_phenotype_ids=["ph-t2dm-001", "ph-metformin-001"],
+    source_repository="OpenCodelists / OpenSAFELY",
+    tags=["diabetes", "endocrine", "OpenSAFELY", "CVD", "study-specific"],
 )
 
 
@@ -1674,39 +1883,46 @@ def get_phenotype_by_id(phenotype_id: str) -> Phenotype | None:
 
 
 def search_phenotypes(query: str) -> list[Phenotype]:
-    """Full-text search across names, descriptions, tags, authors, codes, and ontology terms."""
+    """Text search across phenotype metadata, codelist contents, and ontology terms.
+
+    Searches phenotype names, descriptions, tags, therapeutic areas, types,
+    source repositories, author names/institutions, AND (product fix #1):
+    - All code values and term descriptions inside codelists
+    - Ontology term labels and codes
+    """
     query_lower = query.lower().strip()
     if not query_lower:
         return ALL_PHENOTYPES
 
     results = []
     for p in ALL_PHENOTYPES:
-        # Text fields
-        searchable = " ".join([
-            p.name, p.short_name, p.description,
+        # Core phenotype metadata
+        searchable_parts = [
+            p.name,
+            p.short_name,
+            p.description,
             " ".join(p.tags),
             p.therapeutic_area.value,
             p.phenotype_type.value,
             p.source_repository,
             " ".join(a.name for a in p.authors),
             " ".join(a.institution for a in p.authors),
-        ]).lower()
+        ]
 
-        # Code values and terms (product fix #1)
-        code_searchable = " ".join(
-            f"{code.code} {code.term}"
-            for cl in p.codelists for code in cl.codes
-        ).lower()
+        # Product fix #1: search code values and terms inside codelists
+        for cl in p.codelists:
+            for code in cl.codes:
+                searchable_parts.append(code.code)
+                searchable_parts.append(code.term)
 
-        # Ontology terms (C)
-        ontology_searchable = " ".join(
-            f"{t.system} {t.code} {t.label}"
-            for t in p.ontology_terms
-        ).lower()
+        # Product fix #1: search ontology term labels and codes
+        for ot in p.ontology_terms:
+            searchable_parts.append(ot.code)
+            searchable_parts.append(ot.label)
 
-        full_searchable = f"{searchable} {code_searchable} {ontology_searchable}"
+        searchable = " ".join(searchable_parts).lower()
 
-        if query_lower in full_searchable:
+        if query_lower in searchable:
             results.append(p)
 
     return results
